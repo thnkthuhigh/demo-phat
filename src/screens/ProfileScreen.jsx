@@ -45,10 +45,14 @@ const ProfileScreen = () => {
     }
   }, [userInfo]);
 
+  // Sửa function uploadFileHandler
   const uploadFileHandler = async (e) => {
     const file = e.target.files[0];
     const formData = new FormData();
+
+    // Dùng đúng tên field "image" thay vì "file"
     formData.append("image", file);
+
     setUploading(true);
 
     try {
@@ -61,7 +65,9 @@ const ProfileScreen = () => {
 
       const { data } = await axios.post("/api/upload", formData, config);
 
-      setAvatar(data);
+      // Đảm bảo data là string, không phải array
+      const avatarUrl = Array.isArray(data) ? data[0] : data;
+      setAvatar(avatarUrl);
       setUploading(false);
     } catch (error) {
       console.error(error);
@@ -80,19 +86,14 @@ const ProfileScreen = () => {
 
     try {
       setLoading(true);
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${userInfo.token}`,
-        },
-      };
 
-      const { data } = await axios.put(
-        "/api/users/profile",
-        {
+      // Phiên bản 2: Nếu updateUserProfile là action creator thông thường
+      dispatch(
+        updateUserProfile({
+          _id: userInfo._id,
           name,
           email,
-          password: password || undefined,
+          password: password === "" ? undefined : password,
           avatar,
           phone,
           address,
@@ -100,30 +101,24 @@ const ProfileScreen = () => {
           bankAccount,
           bankName,
           socialLinks: {
-            facebook: facebookLink,
-            twitter: twitterLink,
-            instagram: instagramLink,
+            facebook: facebookLink || undefined,
+            twitter: twitterLink || undefined,
+            instagram: instagramLink || undefined,
           },
           bio,
-        },
-        config
+        })
       );
 
-      dispatch(updateUserProfile(data));
-      setMessage("Cập nhật thông tin thành công");
-      toast.success("Thông tin cá nhân đã được cập nhật");
-      setPassword("");
-      setConfirmPassword("");
+      toast.success("Cập nhật thành công!");
       setLoading(false);
-    } catch (error) {
-      const message =
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : "Cập nhật thông tin thất bại";
-      toast.error(message);
+    } catch (err) {
       setLoading(false);
+      toast.error(err?.message || "Cập nhật thất bại");
     }
   };
+
+  // Đảm bảo avatar có đúng đường dẫn
+  const avatarUrl = avatar || "/images/default-avatar.png";
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -137,7 +132,11 @@ const ProfileScreen = () => {
                 <div className="relative group w-40 h-40 rounded-full overflow-hidden border-4 border-gray-200 mb-4">
                   {avatar ? (
                     <img
-                      src={avatar}
+                      src={
+                        avatarUrl.startsWith("http")
+                          ? avatarUrl
+                          : `${import.meta.env.VITE_API_URL || ""}${avatarUrl}`
+                      }
                       alt={name}
                       className="w-full h-full object-cover"
                       onError={(e) => {

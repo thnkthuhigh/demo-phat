@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
+// Đảm bảo trường avatar được định nghĩa đúng
 const userSchema = mongoose.Schema(
   {
     name: {
@@ -17,7 +18,8 @@ const userSchema = mongoose.Schema(
       required: true,
     },
     avatar: {
-      type: String,
+      type: String, // Đây là kiểu dữ liệu đúng
+      default: "",
     },
     phone: {
       type: String,

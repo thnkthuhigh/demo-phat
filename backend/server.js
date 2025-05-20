@@ -127,7 +127,7 @@ try {
 }
 
 // Import adminRoutes
-app.use('/api/admin', adminRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -137,6 +137,25 @@ app.use((err, req, res, next) => {
     message: err.message,
     stack: process.env.NODE_ENV === "production" ? null : err.stack,
   });
+});
+
+// Thêm middleware ghi log cho các yêu cầu static file
+app.use(
+  "/uploads",
+  (req, res, next) => {
+    console.log(`Static file request: ${req.url}`);
+    next();
+  },
+  express.static(path.join(__dirname, "../uploads"))
+);
+
+// Thêm middleware xử lý lỗi 404 cho file static
+app.use((req, res, next) => {
+  if (req.url.startsWith("/uploads/")) {
+    console.error(`404 Not Found: ${req.url}`);
+    return res.status(404).send("File not found");
+  }
+  next();
 });
 
 // Create HTTP server

@@ -9,7 +9,8 @@ import mongoose from "mongoose";
 // @route   POST /api/cases/:id/support
 // @access  Private
 const createSupport = asyncHandler(async (req, res) => {
-  const { amount, items, message, anonymous, paymentMethod, transactionId } = req.body;
+  const { amount, items, message, anonymous, paymentMethod, transactionId } =
+    req.body;
   const caseId = req.params.id;
 
   // Check if case exists
@@ -20,21 +21,23 @@ const createSupport = asyncHandler(async (req, res) => {
   }
 
   // Validate based on support type
-  const isSupportingMoney = caseItem.supportType === "money" || caseItem.supportType === "both";
-  const isSupportingItems = caseItem.supportType === "items" || caseItem.supportType === "both";
-  
+  const isSupportingMoney =
+    caseItem.supportType === "money" || caseItem.supportType === "both";
+  const isSupportingItems =
+    caseItem.supportType === "items" || caseItem.supportType === "both";
+
   // Kiểm tra nếu không có tiền và không có vật phẩm
   if ((!amount || amount <= 0) && (!items || items.length === 0)) {
     res.status(400);
     throw new Error("Vui lòng ủng hộ tiền hoặc vật phẩm");
   }
-  
+
   // Kiểm tra loại hỗ trợ phù hợp
   if (!isSupportingMoney && amount && amount > 0) {
     res.status(400);
     throw new Error("Hoàn cảnh này không nhận hỗ trợ tiền");
   }
-  
+
   if (!isSupportingItems && items && items.length > 0) {
     res.status(400);
     throw new Error("Hoàn cảnh này không nhận hỗ trợ vật phẩm");
@@ -47,17 +50,20 @@ const createSupport = asyncHandler(async (req, res) => {
       const neededItem = caseItem.neededItems.find(
         (neededItem) => neededItem._id.toString() === item.itemId.toString()
       );
-      
+
       if (!neededItem) {
         res.status(400);
         throw new Error(`Vật phẩm ${item.name} không tồn tại trong yêu cầu`);
       }
-      
+
       // Kiểm tra số lượng
-      const remainingQuantity = neededItem.quantity - neededItem.receivedQuantity;
+      const remainingQuantity =
+        neededItem.quantity - neededItem.receivedQuantity;
       if (item.quantity > remainingQuantity) {
         res.status(400);
-        throw new Error(`Số lượng vật phẩm ${item.name} vượt quá số lượng còn thiếu (${remainingQuantity} ${neededItem.unit})`);
+        throw new Error(
+          `Số lượng vật phẩm ${item.name} vượt quá số lượng còn thiếu (${remainingQuantity} ${neededItem.unit})`
+        );
       }
     }
   }
@@ -147,50 +153,64 @@ const getAllSupports = asyncHandler(async (req, res) => {
 // @route   GET /api/supports/top-supporters
 // @access  Public
 const getTopSupporters = asyncHandler(async (req, res) => {
-  const timeFilter = req.query.timeFilter || "all";
+  const { timeFilter } = req.query;
 
+  // Thiết lập bộ lọc thời gian
   let dateFilter = {};
-
-  // Apply time filter
   if (timeFilter === "week") {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    dateFilter = { createdAt: { $gte: weekAgo } };
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    dateFilter = { createdAt: { $gte: oneWeekAgo } };
   } else if (timeFilter === "month") {
-    const monthAgo = new Date();
-    monthAgo.setMonth(monthAgo.getMonth() - 1);
-    dateFilter = { createdAt: { $gte: monthAgo } };
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    dateFilter = { createdAt: { $gte: oneMonthAgo } };
   }
 
-  const topSupporters = await Support.aggregate([
-    { $match: { status: "completed", anonymous: false, ...dateFilter } },
-    {
-      $group: {
-        _id: "$user",
-        totalAmount: { $sum: "$amount" },
-        supportCount: { $sum: 1 },
+  try {
+    // Chỉ tính các hỗ trợ đã được duyệt
+    const pipeline = [
+      { $match: { status: "completed", ...dateFilter } },
+      {
+        $group: {
+          _id: "$user",
+          userId: { $first: "$user" },
+          totalAmount: { $sum: "$amount" },
+          supportCount: { $sum: 1 },
+        },
       },
-    },
-    { $sort: { totalAmount: -1 } },
-    { $limit: 20 },
-  ]);
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      { $unwind: "$userDetails" },
+      {
+        $project: {
+          _id: { $toString: "$_id" },
+          userId: { $toString: "$userId" },
+          userName: "$userDetails.name",
+          userAvatar: "$userDetails.avatar",
+          totalAmount: 1,
+          supportCount: 1,
+        },
+      },
+      { $sort: { totalAmount: -1 } },
+      { $limit: 50 },
+    ];
 
-  // Populate user details
-  const populatedSupporters = await Promise.all(
-    topSupporters.map(async (supporter) => {
-      const user = await User.findById(supporter._id).select("name avatar");
-      return {
-        _id: supporter._id,
-        userId: supporter._id,
-        userName: user ? user.name : "Unknown User",
-        userAvatar: user ? user.avatar : null,
-        totalAmount: supporter.totalAmount,
-        supportCount: supporter.supportCount,
-      };
-    })
-  );
+    console.log("Executing top supporters aggregation");
+    const supporters = await Support.aggregate(pipeline);
+    console.log(`Found ${supporters.length} top supporters`);
 
-  res.json(populatedSupporters);
+    res.json(supporters);
+  } catch (error) {
+    console.error("Error in getTopSupporters:", error);
+    res.status(500).json({ message: "Server error fetching top supporters" });
+  }
 });
 
 // @desc    Get top supporters for a specific case
@@ -282,27 +302,28 @@ const updateSupportStatus = asyncHandler(async (req, res) => {
   // thì cần phải cập nhật số tiền ủng hộ trong case
   if (prevStatus !== "completed" && status === "completed") {
     const caseToUpdate = await Case.findById(support.case);
-    
+
     if (caseToUpdate) {
       // Cập nhật số tiền nếu có
       if (support.amount > 0) {
         caseToUpdate.currentAmount += support.amount;
         caseToUpdate.supportCount += 1;
       }
-      
+
       // Cập nhật số lượng vật phẩm đã nhận nếu có
       if (support.items && support.items.length > 0) {
         for (const supportItem of support.items) {
           const neededItemIndex = caseToUpdate.neededItems.findIndex(
-            item => item._id.toString() === supportItem.itemId.toString()
+            (item) => item._id.toString() === supportItem.itemId.toString()
           );
-          
+
           if (neededItemIndex !== -1) {
-            caseToUpdate.neededItems[neededItemIndex].receivedQuantity += supportItem.quantity;
+            caseToUpdate.neededItems[neededItemIndex].receivedQuantity +=
+              supportItem.quantity;
           }
         }
       }
-      
+
       await caseToUpdate.save();
 
       // Gửi thông báo cập nhật tiến độ qua socket.io
@@ -315,36 +336,41 @@ const updateSupportStatus = asyncHandler(async (req, res) => {
           ),
           100
         ),
-        neededItems: caseToUpdate.neededItems
+        neededItems: caseToUpdate.neededItems,
       });
     }
   } else if (prevStatus === "completed" && status !== "completed") {
     // Giảm số tiền và vật phẩm khi hủy ủng hộ đã duyệt
     const caseToUpdate = await Case.findById(support.case);
-    
+
     if (caseToUpdate) {
       // Giảm số tiền nếu có
       if (support.amount > 0) {
-        caseToUpdate.currentAmount = Math.max(0, caseToUpdate.currentAmount - support.amount);
+        caseToUpdate.currentAmount = Math.max(
+          0,
+          caseToUpdate.currentAmount - support.amount
+        );
         caseToUpdate.supportCount = Math.max(0, caseToUpdate.supportCount - 1);
       }
-      
+
       // Giảm số lượng vật phẩm đã nhận nếu có
       if (support.items && support.items.length > 0) {
         for (const supportItem of support.items) {
           const neededItemIndex = caseToUpdate.neededItems.findIndex(
-            item => item._id.toString() === supportItem.itemId.toString()
+            (item) => item._id.toString() === supportItem.itemId.toString()
           );
-          
+
           if (neededItemIndex !== -1) {
-            caseToUpdate.neededItems[neededItemIndex].receivedQuantity = Math.max(
-              0,
-              caseToUpdate.neededItems[neededItemIndex].receivedQuantity - supportItem.quantity
-            );
+            caseToUpdate.neededItems[neededItemIndex].receivedQuantity =
+              Math.max(
+                0,
+                caseToUpdate.neededItems[neededItemIndex].receivedQuantity -
+                  supportItem.quantity
+              );
           }
         }
       }
-      
+
       await caseToUpdate.save();
 
       // Gửi thông báo cập nhật tiến độ qua socket.io
@@ -357,7 +383,7 @@ const updateSupportStatus = asyncHandler(async (req, res) => {
           ),
           100
         ),
-        neededItems: caseToUpdate.neededItems
+        neededItems: caseToUpdate.neededItems,
       });
     }
   }

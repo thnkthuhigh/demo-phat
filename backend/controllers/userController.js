@@ -38,7 +38,14 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
-    user.avatar = req.body.avatar || user.avatar;
+
+    // Đảm bảo avatar là string
+    if (req.body.avatar) {
+      user.avatar = Array.isArray(req.body.avatar)
+        ? req.body.avatar[0]
+        : req.body.avatar;
+    }
+
     user.phone = req.body.phone || user.phone;
     user.address = req.body.address || user.address;
     user.gender = req.body.gender || user.gender;
@@ -79,7 +86,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(404);
-    throw new Error("User not found");
+    throw new Error("Không tìm thấy người dùng");
   }
 });
 

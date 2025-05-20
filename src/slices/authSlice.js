@@ -1,16 +1,43 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+
+export const updateUserProfile = createAsyncThunk(
+  "auth/updateUserProfile",
+  async (userData, { rejectWithValue, getState }) => {
+    try {
+      const { auth } = getState();
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.userInfo.token}`,
+        },
+      };
+
+      const { data } = await axios.put("/api/users/profile", userData, config);
+
+      localStorage.setItem("userInfo", JSON.stringify(data));
+
+      return data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response && error.response.data.message
+          ? error.response.data.message
+          : error.message
+      );
+    }
+  }
+);
 
 const initialState = {
-  userInfo: localStorage.getItem('userInfo') 
-    ? JSON.parse(localStorage.getItem('userInfo')) 
+  userInfo: localStorage.getItem("userInfo")
+    ? JSON.parse(localStorage.getItem("userInfo"))
     : null,
   loading: false,
   error: null,
-  success: false
 };
 
 const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
     loginRequest: (state) => {
@@ -37,40 +64,27 @@ const authSlice = createSlice({
       state.loading = false;
       state.userInfo = action.payload;
       state.error = null;
-      state.success = true;
     },
     registerFail: (state, action) => {
       state.loading = false;
       state.error = action.payload;
-      state.success = false;
     },
-    updateProfileRequest: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-    updateProfileSuccess: (state, action) => {
-      state.loading = false;
-      state.userInfo = action.payload;
-      state.success = true;
-    },
-    updateProfileFail: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-      state.success = false;
-    },
-    resetAuthSuccess: (state) => {
-      state.success = false;
-      state.error = null;
-    },
-    // Adding specifically for ProfileScreen.jsx
-    updateUserProfile: (state, action) => {
-      state.loading = true;
-      state.error = null;
-      // This is just a wrapper action that will be caught by our middleware
-      // The actual API call and state updates will be handled by updateProfileRequest, 
-      // updateProfileSuccess, and updateProfileFail
-    }
-  }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(updateUserProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userInfo = action.payload;
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
 export const {
@@ -81,11 +95,6 @@ export const {
   registerRequest,
   registerSuccess,
   registerFail,
-  updateProfileRequest,
-  updateProfileSuccess,
-  updateProfileFail,
-  resetAuthSuccess,
-  updateUserProfile
 } = authSlice.actions;
 
 export default authSlice.reducer;

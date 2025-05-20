@@ -16,7 +16,7 @@ import logger from "redux-logger";
 // Import your reducers
 import authReducer from "./features/auth/authSlice";
 import caseReducer from "./features/cases/caseSlice";
-import supportReducer from "./features/supports/supportSlice";
+import supportReducer from "./features/support/supportSlice";
 import messageReducer from "./features/messages/messageSlice";
 import userReducer from "./features/users/userSlice";
 
@@ -40,11 +40,11 @@ const persistConfig = {
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
     cases: caseReducer,
-    supports: supportReducer,
+    support: supportReducer, // Make sure this is correctly named 'support'
     messages: messageReducer,
     users: userReducer, // Added users reducer here
     // Add other reducers here
