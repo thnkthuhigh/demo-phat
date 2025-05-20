@@ -1,23 +1,67 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+
+const itemSchema = mongoose.Schema({
+  itemId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+  unit: {
+    type: String,
+    required: true,
+  },
+});
+
+const statusHistorySchema = mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: ["pending", "completed", "failed"],
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    note: {
+      type: String,
+      default: "",
+    },
+  },
+  { _id: false }
+);
 
 const supportSchema = mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: 'User',
+      ref: "User",
     },
     case: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: 'Case',
+      ref: "Case",
     },
     amount: {
       type: Number,
-      required: true,
+      default: 0,
     },
+    items: [itemSchema],
     message: {
       type: String,
+      default: "",
     },
     anonymous: {
       type: Boolean,
@@ -25,24 +69,29 @@ const supportSchema = mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      required: true,
-      enum: ['bank_transfer', 'credit_card', 'momo', 'zalopay', 'other'],
+      enum: ["transfer", "momo", "cash", "other"],
+      default: "transfer",
     },
     transactionId: {
       type: String,
+      default: "",
     },
     status: {
       type: String,
-      required: true,
-      enum: ['pending', 'completed', 'failed'],
-      default: 'pending',
+      enum: ["pending", "completed", "failed"],
+      default: "pending",
     },
+    adminNote: {
+      type: String,
+      default: "",
+    },
+    statusHistory: [statusHistorySchema],
   },
   {
     timestamps: true,
   }
 );
 
-const Support = mongoose.model('Support', supportSchema);
+const Support = mongoose.model("Support", supportSchema);
 
 export default Support;

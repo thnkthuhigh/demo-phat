@@ -15,6 +15,12 @@ import authRoutes from "./routes/authRoutes.js"; // Thêm import
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 import morgan from "morgan";
 import adminRoutes from "./routes/adminRoutes.js";
+import uploadRoutes from "./routes/uploadRoutes.js";
+import dotenv from "dotenv";
+
+// Cấu hình
+dotenv.config();
+
 // Thử import colors, nếu không có thì bỏ qua
 let colors;
 try {
@@ -97,6 +103,7 @@ app.use("/api/cases", caseRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/supports", supportRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Debug middleware to log all routes
 app.use((req, res, next) => {
@@ -120,13 +127,17 @@ try {
 }
 
 // Import adminRoutes
+app.use('/api/admin', adminRoutes);
 
-// Sử dụng adminRoutes
-app.use("/api/admin", adminRoutes);
-
-// Middleware xử lý lỗi
-app.use(notFound);
-app.use(errorHandler);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  res.status(statusCode);
+  res.json({
+    message: err.message,
+    stack: process.env.NODE_ENV === "production" ? null : err.stack,
+  });
+});
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -168,8 +179,20 @@ io.on("connection", (socket) => {
 // Export io to use in controllers
 export { io };
 
-// Start server
-const PORT = config.PORT;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Port và khởi động server
+const PORT = process.env.PORT || 5000;
+
+// Kết nối DB trước khi khởi động server
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error(`Failed to start server: ${error.message}`);
+  }
+};
+
+startServer();

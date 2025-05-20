@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 const caseSchema = mongoose.Schema(
   {
+    // Các trường hiện tại
     user: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -28,39 +29,40 @@ const caseSchema = mongoose.Schema(
         "other",
       ],
     },
-    images: [
+    supportType: {
+      type: String,
+      required: true,
+      enum: ["money", "items", "both"],
+      default: "money",
+    },
+    // Cập nhật cấu trúc neededItems để hỗ trợ nhiều vật phẩm
+    neededItems: [
       {
-        type: String,
+        name: { type: String },
+        quantity: { type: Number, default: 1 },
+        receivedQuantity: { type: Number, default: 0 },
+        unit: { type: String, default: "cái" }, // Đơn vị đo
       },
     ],
+    situationImages: [String],
+    proofImages: [String],
     targetAmount: {
       type: Number,
-      required: true,
+      default: 0,
     },
     currentAmount: {
       type: Number,
-      required: true,
       default: 0,
-    },
-    location: {
-      type: String,
-    },
-    contactInfo: {
-      type: String,
-    },
-    endDate: {
-      type: Date,
-    },
-    status: {
-      type: String,
-      required: true,
-      enum: ["pending", "active", "completed", "cancelled"],
-      default: "pending",
     },
     supportCount: {
       type: Number,
-      required: true,
       default: 0,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "active", "completed", "cancelled"],
+      default: "pending",
+      required: true,
     },
     featured: {
       type: Boolean,
@@ -68,17 +70,49 @@ const caseSchema = mongoose.Schema(
     },
     updates: [
       {
-        title: { type: String },
-        content: { type: String },
-        date: { type: Date, default: Date.now },
-        images: [{ type: String }],
+        content: String,
+        date: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
+    location: String,
+    contactInfo: String,
+    endDate: Date,
   },
   {
     timestamps: true,
   }
 );
+
+// Thêm phương thức tính toán progress dựa theo supportType
+caseSchema.methods.calculateProgress = function () {
+  if (this.supportType === "money" || this.supportType === "both") {
+    if (this.targetAmount > 0) {
+      return Math.min(
+        Math.round((this.currentAmount / this.targetAmount) * 100),
+        100
+      );
+    }
+    return 0;
+  } else if (this.supportType === "items") {
+    if (this.neededItems && this.neededItems.length > 0) {
+      const totalProgress = this.neededItems.reduce((acc, item) => {
+        const itemProgress =
+          item.quantity > 0 ? Math.min(item.receivedQuantity / item.quantity, 1) : 0;
+        return acc + itemProgress;
+      }, 0);
+
+      return Math.min(
+        Math.round((totalProgress / this.neededItems.length) * 100),
+        100
+      );
+    }
+    return 0;
+  }
+  return 0;
+};
 
 const Case = mongoose.model("Case", caseSchema);
 

@@ -1,97 +1,71 @@
-import { createSlice } from '@reduxjs/toolkit';
-
-const initialState = {
-  supports: [],
-  userSupports: [],
-  topSupporters: [],
-  loading: false,
-  error: null,
-  success: false
-};
+import { createSlice } from "@reduxjs/toolkit";
+import {
+  fetchUserSupports,
+  fetchSupports,
+  updateSupportStatus,
+} from "./supportActions";
 
 const supportSlice = createSlice({
-  name: 'support',
-  initialState,
+  name: "support",
+  initialState: {
+    userSupports: [],
+    supports: [],
+    loading: false,
+    error: null,
+    success: false,
+  },
   reducers: {
-    createSupportRequest: (state) => {
-      state.loading = true;
-      state.error = null;
-      state.success = false;
-    },
-    createSupportSuccess: (state) => {
-      state.loading = false;
-      state.success = true;
-      state.error = null;
-    },
-    createSupportFail: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-      state.success = false;
-    },
-    
-    fetchUserSupportsRequest: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-    fetchUserSupportsSuccess: (state, action) => {
-      state.loading = false;
-      state.userSupports = action.payload;
-      state.error = null;
-    },
-    fetchUserSupportsFail: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-    
-    fetchSupportsRequest: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-    fetchSupportsSuccess: (state, action) => {
-      state.loading = false;
-      state.supports = action.payload;
-      state.error = null;
-    },
-    fetchSupportsFail: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-    
-    fetchTopSupportersRequest: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-    fetchTopSupportersSuccess: (state, action) => {
-      state.loading = false;
-      state.topSupporters = action.payload;
-      state.error = null;
-    },
-    fetchTopSupportersFail: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
-    
     resetSupportSuccess: (state) => {
       state.success = false;
-      state.error = null;
-    }
-  }
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      // User supports (personal history)
+      .addCase(fetchUserSupports.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUserSupports.fulfilled, (state, action) => {
+        state.loading = false;
+        state.userSupports = action.payload;
+      })
+      .addCase(fetchUserSupports.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // All supports (admin)
+      .addCase(fetchSupports.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchSupports.fulfilled, (state, action) => {
+        state.loading = false;
+        state.supports = action.payload;
+      })
+      .addCase(fetchSupports.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Update support status
+      .addCase(updateSupportStatus.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = false;
+      })
+      .addCase(updateSupportStatus.fulfilled, (state) => {
+        state.loading = false;
+        state.success = true;
+      })
+      .addCase(updateSupportStatus.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.success = false;
+      });
+  },
 });
 
-export const {
-  createSupportRequest,
-  createSupportSuccess,
-  createSupportFail,
-  fetchUserSupportsRequest,
-  fetchUserSupportsSuccess,
-  fetchUserSupportsFail,
-  fetchSupportsRequest,
-  fetchSupportsSuccess,
-  fetchSupportsFail,
-  fetchTopSupportersRequest,
-  fetchTopSupportersSuccess,
-  fetchTopSupportersFail,
-  resetSupportSuccess
-} = supportSlice.actions;
-
+export const { resetSupportSuccess } = supportSlice.actions;
 export default supportSlice.reducer;

@@ -1,4 +1,11 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
+import {
+  fetchCases,
+  fetchFeaturedCases,
+  fetchHomeStats,
+  fetchCaseDetails,
+  createCase,
+} from "./caseActions";
 
 const initialState = {
   featuredCases: [],
@@ -8,11 +15,14 @@ const initialState = {
   stats: null,
   loading: false,
   error: null,
-  success: false
+  success: false,
+  homeStats: null,
+  page: 1,
+  pages: 1,
 };
 
 const caseSlice = createSlice({
-  name: 'cases',
+  name: "cases",
   initialState,
   reducers: {
     // Featured cases
@@ -139,13 +149,77 @@ const caseSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      // Add these cases for fetchCases
+      .addCase(fetchCases.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchCases.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cases = action.payload.cases;
+        state.page = action.payload.page;
+        state.pages = action.payload.pages;
+      })
+      .addCase(fetchCases.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
 
-    // Reset success state
-    resetCaseSuccess: (state) => {
-      state.success = false;
-      state.error = null;
-    }
-  }
+      // Add these cases for fetchFeaturedCases
+      .addCase(fetchFeaturedCases.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchFeaturedCases.fulfilled, (state, action) => {
+        state.loading = false;
+        state.cases = action.payload;
+      })
+      .addCase(fetchFeaturedCases.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Add these cases for fetchHomeStats
+      .addCase(fetchHomeStats.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchHomeStats.fulfilled, (state, action) => {
+        state.loading = false;
+        state.homeStats = action.payload;
+      })
+      .addCase(fetchHomeStats.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Add handling for fetchCaseDetails
+      .addCase(fetchCaseDetails.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchCaseDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.caseDetails = action.payload;
+      })
+      .addCase(fetchCaseDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // Add these cases for createCase
+      .addCase(createCase.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(createCase.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = true;
+      })
+      .addCase(createCase.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
 export const {
@@ -173,7 +247,6 @@ export const {
   fetchCaseStatsRequest,
   fetchCaseStatsSuccess,
   fetchCaseStatsFail,
-  resetCaseSuccess
 } = caseSlice.actions;
 
 export default caseSlice.reducer;

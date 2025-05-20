@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   featuredCases: [],
@@ -8,11 +8,12 @@ const initialState = {
   stats: null,
   loading: false,
   error: null,
-  success: false
+  success: false,
+  homeStats: null,
 };
 
 const caseSlice = createSlice({
-  name: 'cases',
+  name: "cases",
   initialState,
   reducers: {
     // Fetch featured cases
@@ -28,7 +29,7 @@ const caseSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    
+
     // Fetch all cases
     fetchCasesRequest: (state) => {
       state.loading = true;
@@ -42,7 +43,7 @@ const caseSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    
+
     // Fetch case details
     fetchCaseDetailsRequest: (state) => {
       state.loading = true;
@@ -56,7 +57,7 @@ const caseSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    
+
     // Fetch user cases
     fetchUserCasesRequest: (state) => {
       state.loading = true;
@@ -70,7 +71,7 @@ const caseSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    
+
     // Create case
     createCaseRequest: (state) => {
       state.loading = true;
@@ -85,7 +86,7 @@ const caseSlice = createSlice({
       state.error = action.payload;
       state.success = false;
     },
-    
+
     // Update case
     updateCaseRequest: (state) => {
       state.loading = true;
@@ -100,7 +101,7 @@ const caseSlice = createSlice({
       state.error = action.payload;
       state.success = false;
     },
-    
+
     // Delete case
     deleteCaseRequest: (state) => {
       state.loading = true;
@@ -115,7 +116,7 @@ const caseSlice = createSlice({
       state.error = action.payload;
       state.success = false;
     },
-    
+
     // Fetch case statistics
     fetchCaseStatsRequest: (state) => {
       state.loading = true;
@@ -129,13 +130,27 @@ const caseSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
-    
+
     // Reset states
     resetCaseSuccess: (state) => {
       state.success = false;
       state.error = null;
-    }
-  }
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase("homeStats/fetchHomeStats/pending", (state) => {
+        state.loading = true;
+      })
+      .addCase("homeStats/fetchHomeStats/fulfilled", (state, action) => {
+        state.loading = false;
+        state.homeStats = action.payload;
+      })
+      .addCase("homeStats/fetchHomeStats/rejected", (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
 export const {
@@ -163,7 +178,7 @@ export const {
   fetchCaseStatsRequest,
   fetchCaseStatsSuccess,
   fetchCaseStatsFail,
-  resetCaseSuccess
+  resetCaseSuccess,
 } = caseSlice.actions;
 
 export default caseSlice.reducer;

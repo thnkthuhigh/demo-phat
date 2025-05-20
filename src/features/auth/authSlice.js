@@ -1,4 +1,5 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
 const initialState = {
   userInfo: localStorage.getItem('userInfo') 
@@ -8,6 +9,28 @@ const initialState = {
   error: null,
   success: false
 };
+
+// Thêm hàm để kiểm tra token khi app khởi động
+export const checkTokenValidity = createAsyncThunk(
+  'auth/checkToken',
+  async (_, { getState, dispatch }) => {
+    const { userInfo } = getState().auth;
+    if (userInfo && userInfo.token) {
+      try {
+        const { data } = await axios.get('/api/users/profile', {
+          headers: {
+            Authorization: `Bearer ${userInfo.token}`,
+          },
+        });
+        return data;
+      } catch (error) {
+        // Nếu token không hợp lệ, đăng xuất
+        dispatch(logoutUser());
+        throw new Error('Token hết hạn, vui lòng đăng nhập lại');
+      }
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',

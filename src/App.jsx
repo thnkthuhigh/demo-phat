@@ -24,15 +24,18 @@ import UserCasesScreen from "./screens/UserCasesScreen";
 import UserSupportsScreen from "./screens/UserSupportsScreen";
 import UserProfileScreen from "./screens/UserProfileScreen";
 import SupportersRankScreen from "./screens/SupportersRankScreen";
+import CasesScreen from "./screens/CasesScreen";
 
 // Admin Screens
 import AdminCaseListScreen from "./screens/admin/AdminCaseListScreen";
 import AdminSupportListScreen from "./screens/admin/AdminSupportListScreen";
 import AdminDashboardScreen from "./screens/admin/AdminDashboardScreen";
+import AdminPendingCasesScreen from "./screens/admin/AdminPendingCasesScreen";
 
 // Auth
 import PrivateRoute from "./components/layout/PrivateRoute";
 import AdminRoute from "./components/layout/AdminRoute";
+import ErrorBoundary from "./components/shared/ErrorBoundary";
 
 function App() {
   return (
@@ -59,13 +62,24 @@ function App() {
               <Route path="/create-case" element={<CreateCaseScreen />} />
               <Route path="/edit-case/:id" element={<EditCaseScreen />} />
               <Route path="/my-cases" element={<UserCasesScreen />} />
-              <Route path="/my-supports" element={<UserSupportsScreen />} />
+              <Route
+                path="/my-supports"
+                element={
+                  <ErrorBoundary>
+                    <UserSupportsScreen />
+                  </ErrorBoundary>
+                }
+              />
             </Route>
 
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminRoute />}>
               <Route path="" element={<AdminDashboardScreen />} />
               <Route path="cases" element={<AdminCaseListScreen />} />
+              <Route
+                path="cases/pending"
+                element={<AdminPendingCasesScreen />}
+              />
               <Route path="supports" element={<AdminSupportListScreen />} />
             </Route>
 
@@ -77,6 +91,9 @@ function App() {
 
             {/* Route cho trang chi tiết người dùng */}
             <Route path="/user/:id" element={<UserProfileScreen />} />
+
+            {/* Route cho trang danh sách hoàn cảnh */}
+            <Route path="/cases" element={<CasesScreen />} />
           </Routes>
         </main>
         <Footer />
