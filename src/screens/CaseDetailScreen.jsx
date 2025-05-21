@@ -260,13 +260,15 @@ const CaseDetailScreen = () => {
           {/* Main image slideshow */}
           {caseDetails.situationImages &&
           caseDetails.situationImages.length > 0 ? (
-            <div className="mb-6 relative">
-              <div className="relative h-96 overflow-hidden rounded-lg">
+            <div className="mb-8 relative">
+              <div className="relative h-[500px] overflow-hidden rounded-xl shadow-lg">
                 {caseDetails.situationImages.map((image, index) => (
                   <div
                     key={index}
-                    className={`absolute w-full h-full transition-opacity duration-500 ${
-                      index === currentSlide ? "opacity-100" : "opacity-0"
+                    className={`absolute w-full h-full transition-all duration-700 ease-in-out ${
+                      index === currentSlide
+                        ? "opacity-100 scale-100"
+                        : "opacity-0 scale-95"
                     }`}
                     style={{
                       display: index === currentSlide ? "block" : "none",
@@ -275,17 +277,17 @@ const CaseDetailScreen = () => {
                     <img
                       src={image}
                       alt={`${caseDetails.title} - ${index + 1}`}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-cover rounded-xl"
                     />
                   </div>
                 ))}
 
-                {/* Nút điều hướng */}
+                {/* Navigation buttons with improved design */}
                 {caseDetails.situationImages.length > 1 && (
                   <>
                     <button
                       onClick={prevSlide}
-                      className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-40 text-white p-2 rounded-full hover:bg-opacity-60"
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 text-gray-800 p-3 rounded-full hover:bg-opacity-100 transition-all shadow-md"
                       aria-label="Ảnh trước"
                     >
                       <svg
@@ -305,7 +307,7 @@ const CaseDetailScreen = () => {
                     </button>
                     <button
                       onClick={nextSlide}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-40 text-white p-2 rounded-full hover:bg-opacity-60"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 text-gray-800 p-3 rounded-full hover:bg-opacity-100 transition-all shadow-md"
                       aria-label="Ảnh sau"
                     >
                       <svg
@@ -326,17 +328,17 @@ const CaseDetailScreen = () => {
                   </>
                 )}
 
-                {/* Chỉ số slide */}
+                {/* Slide indicators with improved design */}
                 {caseDetails.situationImages.length > 1 && (
-                  <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
+                  <div className="absolute bottom-6 left-0 right-0 flex justify-center space-x-2">
                     {caseDetails.situationImages.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => setCurrentSlide(index)}
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-3 h-3 rounded-full transition-all shadow ${
                           index === currentSlide
-                            ? "bg-white"
-                            : "bg-white bg-opacity-50"
+                            ? "bg-white scale-125"
+                            : "bg-white bg-opacity-50 hover:bg-opacity-75"
                         }`}
                         aria-label={`Chuyển đến ảnh ${index + 1}`}
                       ></button>
@@ -345,23 +347,27 @@ const CaseDetailScreen = () => {
                 )}
               </div>
 
-              {/* Thumbnail images for situation images */}
+              {/* Thumbnails with improved design */}
               {caseDetails.situationImages.length > 1 && (
-                <div className="grid grid-cols-6 gap-2 mt-2">
+                <div className="grid grid-cols-6 gap-2 mt-4">
                   {caseDetails.situationImages.map((image, index) => (
                     <div
                       key={`thumb-${index}`}
                       onClick={() => setCurrentSlide(index)}
-                      className={`relative cursor-pointer border-2 rounded ${
+                      className={`relative cursor-pointer overflow-hidden rounded-lg ${
                         index === currentSlide
-                          ? "border-indigo-500"
-                          : "border-transparent"
+                          ? "ring-2 ring-indigo-500 ring-offset-2"
+                          : "hover:opacity-80"
                       }`}
                     >
                       <img
                         src={image}
                         alt={`${caseDetails.title} - ${index + 1}`}
-                        className="w-full h-20 object-cover rounded"
+                        className={`w-full h-20 object-cover transition-all ${
+                          index === currentSlide
+                            ? "brightness-105"
+                            : "brightness-90"
+                        }`}
                       />
                     </div>
                   ))}
@@ -454,42 +460,19 @@ const CaseDetailScreen = () => {
           )}
 
           {/* Tab navigation */}
-          <div className="border-b border-gray-200 mb-6">
-            <nav className="flex space-x-4 overflow-x-auto scrollbar-hide">
-              <button
-                onClick={() => setActiveTab("description")}
-                className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap ${
-                  activeTab === "description"
-                    ? "border-b-2 border-indigo-500 text-indigo-600"
-                    : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5 mr-1.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Chi tiết hoàn cảnh
-              </button>
-              {caseDetails.updates && caseDetails.updates.length > 0 && (
+          <div className="mb-8">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-6 overflow-x-auto scrollbar-hide">
                 <button
-                  onClick={() => setActiveTab("updates")}
-                  className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap ${
-                    activeTab === "updates"
-                      ? "border-b-2 border-indigo-500 text-indigo-600"
-                      : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  onClick={() => setActiveTab("description")}
+                  className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                    activeTab === "description"
+                      ? "border-indigo-500 text-indigo-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   <svg
-                    className="w-5 h-5 mr-1.5"
+                    className="w-5 h-5 mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -498,60 +481,98 @@ const CaseDetailScreen = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  Cập nhật ({caseDetails.updates.length})
+                  Chi tiết hoàn cảnh
                 </button>
-              )}
-              <button
-                onClick={() => setActiveTab("supporters")}
-                className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap ${
-                  activeTab === "supporters"
-                    ? "border-b-2 border-indigo-500 text-indigo-600"
-                    : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5 mr-1.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+
+                {caseDetails.updates && caseDetails.updates.length > 0 && (
+                  <button
+                    onClick={() => setActiveTab("updates")}
+                    className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                      activeTab === "updates"
+                        ? "border-indigo-500 text-indigo-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                      />
+                    </svg>
+                    Cập nhật
+                    <span className="ml-1.5 px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                      {caseDetails.updates.length}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setActiveTab("supporters")}
+                  className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                    activeTab === "supporters"
+                      ? "border-indigo-500 text-indigo-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
-                </svg>
-                Người ủng hộ
-                {recentSupports?.length ? ` (${recentSupports.length})` : ""}
-              </button>
-              <button
-                onClick={() => setActiveTab("topSupporters")}
-                className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap ${
-                  activeTab === "topSupporters"
-                    ? "border-b-2 border-indigo-500 text-indigo-600"
-                    : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5 mr-1.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  Người ủng hộ
+                  {recentSupports?.length > 0 && (
+                    <span className="ml-1.5 px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                      {recentSupports.length}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("topSupporters")}
+                  className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                    activeTab === "topSupporters"
+                      ? "border-indigo-500 text-indigo-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h4v-7zM11 18h4a2 2 0 002-2v-5h-6v7z"
-                  ></path>
-                </svg>
-                Top người ủng hộ
-              </button>
-            </nav>
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h4v-7zM11 18h4a2 2 0 002-2v-5h-6v7z"
+                    ></path>
+                  </svg>
+                  Top người ủng hộ
+                </button>
+              </nav>
+            </div>
+
+            {/* Tab content container với hiệu ứng fade-in */}
+            <div className="pt-6 animate-fadeIn">{/* Tab content here */}</div>
           </div>
 
           {/* Tab content */}
@@ -950,9 +971,25 @@ const CaseDetailScreen = () => {
             {caseDetails.status === "active" && (
               <button
                 onClick={handleSupportClick}
-                className="w-full py-3 bg-indigo-600 text-white rounded-md text-lg font-medium hover:bg-indigo-700 transition-colors"
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg text-lg font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 animate-pulse-subtle"
               >
-                Ủng hộ ngay
+                <div className="flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  Ủng hộ ngay
+                </div>
               </button>
             )}
 
@@ -1147,25 +1184,32 @@ const CaseDetailScreen = () => {
       )}
 
       {/* Add ChatBox with title */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-4 flex items-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 mr-2 text-indigo-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-          Thảo luận
-        </h2>
-        <ChatBox caseId={caseId} userInfo={userInfo} />
+      <div className="mt-12 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-white">
+          <h2 className="text-xl font-bold flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 mr-2 text-indigo-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            Thảo luận
+          </h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Tham gia thảo luận về hoàn cảnh này
+          </p>
+        </div>
+        <div className="p-5">
+          <ChatBox caseId={caseId} userInfo={userInfo} />
+        </div>
       </div>
     </div>
   );
