@@ -10,6 +10,10 @@ import {
   getCaseStats,
   toggleCaseFeature,
 } from "../controllers/caseController.js";
+import {
+  getMessages,
+  createMessage,
+} from "../controllers/messageController.js";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import {
   createSupport,
@@ -34,5 +38,8 @@ router
 router.route("/:id/support").post(protect, createSupport);
 router.get("/:id/top-supporters", getTopSupportersForCase);
 router.route("/:id/feature").put(protect, admin, toggleCaseFeature);
+
+// Ensure the message routes are added
+router.route("/:caseId/messages").get(getMessages).post(protect, createMessage);
 
 export default router;

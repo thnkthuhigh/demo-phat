@@ -1,24 +1,26 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { logoutUser } from '../../slices/authSlice';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { logoutUser } from "../../slices/authSlice";
+
+const DEFAULT_AVATAR = "https://via.placeholder.com/40";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const { userInfo } = useSelector((state) => state.auth);
-  
+
   const logoutHandler = () => {
     dispatch(logoutUser());
-    localStorage.removeItem('userInfo');
-    navigate('/');
+    localStorage.removeItem("userInfo");
+    navigate("/");
     setIsProfileDropdownOpen(false);
   };
-  
+
   return (
     <header className="bg-white shadow-md">
       <div className="container mx-auto px-4">
@@ -26,38 +28,61 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
-              <span className="text-xl font-bold text-indigo-600">TặngTặng</span>
+              <span className="text-xl font-bold text-indigo-600">
+                TặngTặng
+              </span>
             </Link>
           </div>
-          
+
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center">
-            <Link to="/" className="px-3 py-2 text-gray-700 hover:text-indigo-600">
+            <Link
+              to="/"
+              className="px-3 py-2 text-gray-700 hover:text-indigo-600"
+            >
               Trang chủ
             </Link>
-            <Link to="/cases" className="px-3 py-2 text-gray-700 hover:text-indigo-600">
+            <Link
+              to="/cases"
+              className="px-3 py-2 text-gray-700 hover:text-indigo-600"
+            >
               Hoàn cảnh
             </Link>
-            <Link to="/supporters-ranking" className="px-3 py-2 text-gray-700 hover:text-indigo-600">
+            <Link
+              to="/supporters-ranking"
+              className="px-3 py-2 text-gray-700 hover:text-indigo-600"
+            >
               Bảng xếp hạng
             </Link>
-            <Link to="/create-case" className="px-3 py-2 text-gray-700 hover:text-indigo-600">
+            <Link
+              to="/create-case"
+              className="px-3 py-2 text-gray-700 hover:text-indigo-600"
+            >
               Tạo hoàn cảnh
             </Link>
           </nav>
-          
+
           {/* User Menu - Desktop */}
           <div className="hidden md:flex items-center">
             {userInfo ? (
               <div className="relative">
                 <button
-                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                  onClick={() =>
+                    setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                  }
                   className="flex items-center space-x-2 focus:outline-none"
                 >
                   <img
-                    src={userInfo.avatar || "https://via.placeholder.com/40"}
-                    alt={userInfo.name}
-                    className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                    src={userInfo?.avatar || DEFAULT_AVATAR}
+                    alt={userInfo?.name}
+                    className="h-8 w-8 rounded-full object-cover"
+                    onError={(e) => {
+                      console.log(
+                        "Avatar load error in header, fallback to default"
+                      );
+                      e.target.onerror = null;
+                      e.target.src = DEFAULT_AVATAR;
+                    }}
                   />
                   <span className="text-gray-700">{userInfo.name}</span>
                   <svg
@@ -75,7 +100,7 @@ const Header = () => {
                     ></path>
                   </svg>
                 </button>
-                
+
                 {/* Profile Dropdown */}
                 {isProfileDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
@@ -137,7 +162,7 @@ const Header = () => {
               </div>
             )}
           </div>
-          
+
           {/* Mobile menu button */}
           <div className="md:hidden">
             <button
@@ -177,7 +202,7 @@ const Header = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden py-2 bg-white border-t border-gray-100">
@@ -210,15 +235,22 @@ const Header = () => {
             >
               Tạo hoàn cảnh
             </Link>
-            
+
             {userInfo ? (
               <>
                 <div className="pt-2 mt-2 border-t border-gray-100">
                   <div className="flex items-center space-x-3 py-2">
                     <img
-                      src={userInfo.avatar || "https://via.placeholder.com/40"}
-                      alt={userInfo.name}
-                      className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                      src={userInfo?.avatar || DEFAULT_AVATAR}
+                      alt={userInfo?.name}
+                      className="h-8 w-8 rounded-full object-cover"
+                      onError={(e) => {
+                        console.log(
+                          "Avatar load error in header, fallback to default"
+                        );
+                        e.target.onerror = null;
+                        e.target.src = DEFAULT_AVATAR;
+                      }}
                     />
                     <span className="font-medium">{userInfo.name}</span>
                   </div>

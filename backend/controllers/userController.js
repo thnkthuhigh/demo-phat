@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import User from "../models/userModel.js";
 import Support from "../models/supportModel.js";
+import mongoose from "mongoose";
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -124,6 +125,63 @@ const getUserById = asyncHandler(async (req, res) => {
   } else {
     res.status(404);
     throw new Error("User not found");
+  }
+});
+
+// Thêm function mới để lấy thông tin chi tiết của người dùng
+export const getUserDetails = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Tìm user theo ID
+    const user = await User.findById(id).select("-password");
+
+    if (!user) {
+      res.status(404);
+      throw new Error("Không tìm thấy người dùng");
+    }
+
+    // Lấy thêm thống kê về số lần ủng hộ và tổng tiền
+    const supportStats = await Support.aggregate([
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(id),
+          status: "completed",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+          supportCount: { $count: {} },
+        },
+      },
+    ]);
+
+    // Kết hợp thông tin user với thống kê
+    const userDetails = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatar: user.avatar,
+      gender: user.gender,
+      address: user.address,
+      bio: user.bio,
+      bankName: user.bankName,
+      bankAccount: user.bankAccount,
+      socialLinks: user.socialLinks || {},
+      createdAt: user.createdAt,
+      isAdmin: user.isAdmin,
+      totalSupported: supportStats[0]?.totalAmount || 0,
+      supportCount: supportStats[0]?.supportCount || 0,
+    };
+
+    res.json(userDetails);
+  } catch (error) {
+    console.error("Error getting user details:", error);
+    res.status(500);
+    throw new Error("Lỗi khi lấy thông tin người dùng");
   }
 });
 

@@ -153,63 +153,88 @@ const getAllSupports = asyncHandler(async (req, res) => {
 // @route   GET /api/supports/top-supporters
 // @access  Public
 const getTopSupporters = asyncHandler(async (req, res) => {
-  const { timeFilter } = req.query;
+  const timeFilter = req.query.timeFilter || "all";
 
-  // Thiết lập bộ lọc thời gian
-  let dateFilter = {};
+  // Ghi log để debug
+  console.log(`Getting top supporters with filter: ${timeFilter}`);
+
+  // Tạo điều kiện lọc theo thời gian
+  let timeCondition = {};
+
   if (timeFilter === "week") {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    dateFilter = { createdAt: { $gte: oneWeekAgo } };
+    timeCondition = { createdAt: { $gte: oneWeekAgo } };
   } else if (timeFilter === "month") {
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    dateFilter = { createdAt: { $gte: oneMonthAgo } };
+    timeCondition = { createdAt: { $gte: oneMonthAgo } };
   }
 
+  // Đảm bảo chỉ lấy các giao dịch đã hoàn thành
+  const matchCondition = {
+    ...timeCondition,
+    status: "completed",
+  };
+
   try {
-    // Chỉ tính các hỗ trợ đã được duyệt
-    const pipeline = [
-      { $match: { status: "completed", ...dateFilter } },
+    // Thêm thời gian hiện tại để đảm bảo aggregate không bị cache
+    console.log(`Aggregating supporters at ${new Date().toISOString()}`);
+
+    const supporters = await Support.aggregate([
+      {
+        $match: matchCondition,
+      },
       {
         $group: {
           _id: "$user",
-          userId: { $first: "$user" },
           totalAmount: { $sum: "$amount" },
           supportCount: { $sum: 1 },
+          lastSupport: { $max: "$createdAt" }, // Thêm thời gian hỗ trợ gần nhất
         },
+      },
+      {
+        $sort: { totalAmount: -1, supportCount: -1, lastSupport: -1 }, // Sắp xếp theo nhiều tiêu chí
+      },
+      {
+        $limit: 50, // Lấy top 50
       },
       {
         $lookup: {
           from: "users",
-          localField: "userId",
+          localField: "_id",
           foreignField: "_id",
-          as: "userDetails",
+          as: "userInfo",
         },
       },
-      { $unwind: "$userDetails" },
+      {
+        $unwind: "$userInfo",
+      },
       {
         $project: {
-          _id: { $toString: "$_id" },
-          userId: { $toString: "$userId" },
-          userName: "$userDetails.name",
-          userAvatar: "$userDetails.avatar",
+          _id: 1,
+          userId: "$_id",
+          userName: "$userInfo.name",
+          userAvatar: "$userInfo.avatar",
           totalAmount: 1,
           supportCount: 1,
+          lastSupport: 1,
         },
       },
-      { $sort: { totalAmount: -1 } },
-      { $limit: 50 },
-    ];
+    ]);
 
-    console.log("Executing top supporters aggregation");
-    const supporters = await Support.aggregate(pipeline);
+    // Thêm thông tin debug
     console.log(`Found ${supporters.length} top supporters`);
 
+    // Đảm bảo response có header không cache
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Pragma", "no-cache");
     res.json(supporters);
   } catch (error) {
     console.error("Error in getTopSupporters:", error);
-    res.status(500).json({ message: "Server error fetching top supporters" });
+    res
+      .status(500)
+      .json({ message: "Lỗi khi lấy danh sách người ủng hộ hàng đầu" });
   }
 });
 

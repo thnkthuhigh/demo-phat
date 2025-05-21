@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useOutletContext } from "react-router-dom"; // Thêm useOutletContext
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import Loader from "../../components/shared/Loader";
 import Message from "../../components/shared/Message";
 import axios from "axios";
-import { toggleCaseFeature } from "../../services/caseService"; // Import the service function
+import { toast } from "react-toastify";
 
 const AdminCaseListScreen = () => {
   // Lấy giá trị từ context nếu cần
   const { pendingCases = 0 } = useOutletContext() || {};
   const { userInfo } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
 
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -131,26 +132,6 @@ const AdminCaseListScreen = () => {
     }
   };
 
-  const handleToggleFeatured = async (id, featured) => {
-    try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${userInfo.token}`,
-          "Content-Type": "application/json",
-        },
-      };
-
-      await axios.put(`/api/admin/cases/${id}/featured`, {}, config);
-      setRefresh(!refresh);
-    } catch (error) {
-      setError(
-        error.response && error.response.data.message
-          ? error.response.data.message
-          : error.message
-      );
-    }
-  };
-
   const handleApproveCase = async (id) => {
     try {
       const config = {
@@ -210,14 +191,33 @@ const AdminCaseListScreen = () => {
     return neededItems.length;
   };
 
-  const handleToggleFeature = async (id) => {
+  const handleToggleFeature = async (id, currentStatus) => {
     try {
-      await toggleCaseFeature(id);
-      // Refresh the cases list
-      dispatch(listCases());
-      toast.success("Cập nhật trạng thái nổi bật thành công");
+      const config = {
+        headers: {
+          Authorization: `Bearer ${userInfo.token}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+      await axios.put(`/api/cases/${id}/feature`, {}, config);
+
+      // Refresh data bằng cách gọi lại API thay vì dùng dispatch(listCases())
+      setRefresh(!refresh);
+
+      toast.success(
+        currentStatus
+          ? "Đã bỏ đánh dấu nổi bật"
+          : "Đã đánh dấu nổi bật thành công"
+      );
     } catch (error) {
-      toast.error("Không thể cập nhật trạng thái nổi bật");
+      toast.error(
+        `Lỗi: ${
+          error.response?.data?.message ||
+          "Không thể cập nhật trạng thái nổi bật"
+        }`
+      );
+      console.error("Toggle feature error:", error);
     }
   };
 
@@ -439,26 +439,9 @@ const AdminCaseListScreen = () => {
                             </button>
                           </>
                         )}
-                        <h
-                          onClick={() =>
-                            handleToggleFeatured(
-                              caseItem._id,
-                              caseItem.featured
-                            )
-                          }
-                          className={`${
-                            caseItem.featured
-                              ? "text-amber-600 hover:text-amber-900"
-                              : "text-gray-600 hover:text-gray-900"
-                          }`}
-                        >
-                          {caseItem.featured
-                            ? "Bỏ nổi bật"
-                            : "Đánh dấu nổi bật"}
-                        </h>
                         <button
                           onClick={() => handleToggleFeature(caseItem._id)}
-                          className={`px-2 py-1 rounded text-xs font-medium ${
+                          className={`px-2 py-1 rounded text-xs font-medium flex items-center ${
                             caseItem.featured
                               ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
                               : "bg-gray-100 text-gray-800 hover:bg-gray-200"
@@ -466,7 +449,7 @@ const AdminCaseListScreen = () => {
                           disabled={loading}
                         >
                           {caseItem.featured ? (
-                            <span className="flex items-center">
+                            <>
                               <svg
                                 className="w-3.5 h-3.5 mr-1"
                                 fill="currentColor"
@@ -474,10 +457,25 @@ const AdminCaseListScreen = () => {
                               >
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                               </svg>
-                              Đã nổi bật
-                            </span>
+                              Bỏ nổi bật
+                            </>
                           ) : (
-                            "Đánh dấu nổi bật"
+                            <>
+                              <svg
+                                className="w-3.5 h-3.5 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                                />
+                              </svg>
+                              Đánh dấu nổi bật
+                            </>
                           )}
                         </button>
                         <Link

@@ -10,6 +10,12 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Đảm bảo thư mục uploads tồn tại
+const uploadsDir = "uploads/";
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Kiểm tra phần cấu hình multer storage
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -17,8 +23,9 @@ const storage = multer.diskStorage({
   },
   filename(req, file, cb) {
     // Tạo tên file duy nhất với phần mở rộng gốc
-    const uniqueFilename = `${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, uniqueFilename);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, "_");
+    cb(null, `${uniqueSuffix}-${sanitizedName}`);
   },
 });
 
@@ -41,66 +48,24 @@ const upload = multer({
     checkFileType(file, cb);
   },
   limits: { fileSize: 5 * 1024 * 1024 },
-}).single("image"); // Đây là field name mà server đang mong đợi
+}).array("image", 10); // Đúng tên field là "image" và giới hạn 10 file
 
-const uploadImages = asyncHandler(async (req, res) => {
-  console.log("Upload request received");
+// Chỉnh lại đường dẫn URL để tránh vấn đề với đường dẫn tương đối
+export const uploadImages = asyncHandler(async (req, res) => {
+  upload(req, res, function (err) {
+    if (err) {
+      console.error("Upload error:", err);
+      res.status(400);
+      throw new Error(err.message);
+    }
 
-  // Kiểm tra xem user có tồn tại không
-  if (!req.user) {
-    console.error("User not found in request");
-    res.status(401);
-    throw new Error("User not authenticated");
-  }
+    // Đảm bảo URL có đường dẫn đầy đủ
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const paths = req.files.map(
+      (file) => `${baseUrl}/uploads/${file.filename}` // Đường dẫn đầy đủ
+    );
 
-  console.log("User authenticated:", req.user._id);
-
-  // Debug - log request headers và thông tin request
-  console.log("Content-Type:", req.headers["content-type"]);
-  console.log("Request has body:", !!req.body);
-  console.log("Request body keys:", Object.keys(req.body || {}));
-
-  // Print form data field names
-  if (
-    req.headers["content-type"] &&
-    req.headers["content-type"].includes("multipart/form-data")
-  ) {
-    console.log("Multipart form detected");
-  }
-
-  try {
-    // Continue với upload middleware
-    upload(req, res, function (err) {
-      if (err) {
-        console.log("Multer error:", err);
-        // Trả về response lỗi thay vì throw error
-        return res.status(400).json({
-          message: `Lỗi upload: ${err.message}`,
-          field: err.field,
-          code: err.code,
-        });
-      }
-
-      // Xử lý phản hồi sau khi upload thành công
-      if (!req.file) {
-        return res
-          .status(400)
-          .json({ message: "Không có file nào được tải lên" });
-      }
-
-      // Tạo đường dẫn URL tương đối thay vì đường dẫn tuyệt đối
-      const filePath = `/uploads/${req.file.filename}`; // Trả về /uploads/filename.png
-
-      // Log kết quả
-      console.log("Upload successful, returning URL path:", filePath);
-
-      // Trả về kết quả
-      res.json(filePath);
-    });
-  } catch (error) {
-    console.error("Failed to process upload:", error);
-    res.status(500).json({ message: "Upload failed", error: error.message });
-  }
+    console.log("Files uploaded successfully:", paths.length);
+    res.json(paths);
+  });
 });
-
-export { uploadImages };

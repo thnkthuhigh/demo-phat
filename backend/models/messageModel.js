@@ -1,31 +1,28 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const messageSchema = mongoose.Schema(
   {
-    sender: {
+    case: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
-      ref: 'User',
+      ref: "Case",
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: "User",
     },
     content: {
       type: String,
       required: true,
     },
-    case: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: 'Case',
-    },
-    isAdmin: {
-      type: Boolean,
-      default: false,
-    },
+    // Các trường khác nếu có...
   },
   {
     timestamps: true,
   }
 );
 
-const Message = mongoose.model('Message', messageSchema);
+const Message = mongoose.model("Message", messageSchema);
 
 export default Message;

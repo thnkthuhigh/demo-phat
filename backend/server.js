@@ -215,3 +215,31 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Thêm vào server.js để phục vụ files từ thư mục uploads
+
+// Đoạn code này phải được thêm TRƯỚC định nghĩa các routes API
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// Debug để kiểm tra đường dẫn uploads
+console.log("Uploads directory path:", path.join(__dirname, "../uploads"));
+
+// Thêm route để kiểm tra trạng thái uploads directory
+app.get("/api/check-uploads", (req, res) => {
+  const uploadsPath = path.join(__dirname, "../uploads");
+  fs.readdir(uploadsPath, (err, files) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+        path: uploadsPath,
+      });
+    }
+
+    return res.json({
+      success: true,
+      path: uploadsPath,
+      files: files,
+    });
+  });
+});

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Loader from "../components/shared/Loader";
@@ -9,30 +9,66 @@ const SupportersRankScreen = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [timeFilter, setTimeFilter] = useState("all"); // "all", "month", "week"
+  const [lastRefreshed, setLastRefreshed] = useState(new Date());
+  const [autoRefresh, setAutoRefresh] = useState(false);
 
   // Fetch top supporters data directly with axios
-  const fetchTopSupporters = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log(`Fetching supporters with filter: ${timeFilter}`);
-      const { data } = await axios.get(
-        `/api/supports/top-supporters?timeFilter=${timeFilter}`
-      );
-      console.log("API response:", data);
-      setSupporters(data);
-    } catch (err) {
-      console.error("Error fetching supporters:", err);
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchTopSupporters = useCallback(
+    async (showLoading = true) => {
+      try {
+        if (showLoading) {
+          setLoading(true);
+        }
+        setError(null);
+        console.log(`Fetching supporters with filter: ${timeFilter}`);
+        const { data } = await axios.get(
+          `/api/supports/top-supporters?timeFilter=${timeFilter}&_=${Date.now()}`
+        );
+        console.log("API response:", data);
+        setSupporters(data);
+        setLastRefreshed(new Date());
+      } catch (err) {
+        console.error("Error fetching supporters:", err);
+        setError(err.response?.data?.message || err.message);
+      } finally {
+        if (showLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    [timeFilter]
+  );
 
   // Fetch data on component mount and when filter changes
   useEffect(() => {
     fetchTopSupporters();
-  }, [timeFilter]);
+  }, [timeFilter, fetchTopSupporters]);
+
+  // Set up auto refresh
+  useEffect(() => {
+    let refreshInterval;
+
+    if (autoRefresh) {
+      refreshInterval = setInterval(() => {
+        console.log("Auto refreshing supporter data...");
+        fetchTopSupporters(false); // Don't show loading indicator for auto refresh
+      }, 60000); // Refresh every 60 seconds
+    }
+
+    return () => {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+      }
+    };
+  }, [autoRefresh, fetchTopSupporters]);
+
+  const handleManualRefresh = () => {
+    fetchTopSupporters(true); // Show loading indicator for manual refresh
+  };
+
+  const toggleAutoRefresh = () => {
+    setAutoRefresh((prev) => !prev);
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -42,11 +78,60 @@ const SupportersRankScreen = () => {
     }).format(amount);
   };
 
+  const formatRefreshTime = (date) => {
+    return date.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-8">
-        Bảng xếp hạng người ủng hộ
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Bảng xếp hạng người ủng hộ</h1>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <span className="text-sm text-gray-500 mr-3">
+              Cập nhật lúc: {formatRefreshTime(lastRefreshed)}
+            </span>
+            <button
+              onClick={handleManualRefresh}
+              className="bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50 px-4 py-2 rounded-lg flex items-center"
+              disabled={loading}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-5 w-5 mr-2 ${loading ? "animate-spin" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              {loading ? "Đang cập nhật..." : "Cập nhật ngay"}
+            </button>
+          </div>
+          <div className="flex items-center">
+            <label className="inline-flex items-center">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={toggleAutoRefresh}
+                className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 mr-2"
+              />
+              <span className="text-sm text-gray-700">
+                Tự động cập nhật (1 phút)
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
 
       {/* Filter buttons */}
       <div className="mb-8 flex justify-center">

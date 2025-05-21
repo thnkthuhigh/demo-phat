@@ -3,6 +3,7 @@ import {
   getUserProfile,
   updateUserProfile,
   getUserById,
+  getUserDetails,
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -13,6 +14,6 @@ router
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
-router.get("/:id", getUserById);
+router.route("/:id").get(getUserDetails);
 
 export default router;
