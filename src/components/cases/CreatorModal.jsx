@@ -1,5 +1,6 @@
 // components/case/CreatorModal.jsx
 import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { DEFAULT_AVATAR } from "../../utils/constants";
 
 const CreatorModal = ({
@@ -9,6 +10,7 @@ const CreatorModal = ({
   onClose,
   isLoading = false,
 }) => {
+  const navigate = useNavigate();
   // Thêm log để debug
   useEffect(() => {
     console.log("CreatorModal received data:", creatorDetails);
@@ -147,6 +149,17 @@ const CreatorModal = ({
                 <h4 className="text-lg font-semibold mt-3">
                   {defaultDetails.name}
                 </h4>
+                {creatorDetails?._id && (
+                  <button
+                    onClick={() => {
+                      onClose?.();
+                      navigate(`/user/${creatorDetails._id}`);
+                    }}
+                    className="mt-1 text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
+                  >
+                    Xem chi tiết
+                  </button>
+                )}
                 <p className="text-gray-500 text-sm">
                   Tham gia từ{" "}
                   {defaultDetails.createdAt
@@ -291,7 +304,7 @@ const CreatorModal = ({
                     <div className="flex space-x-3">
                       {defaultDetails.socialLinks?.facebook && (
                         <a
-                          href={defaultDetails.socialLinks.facebook}
+                          href={`https://www.facebook.com/${defaultDetails.socialLinks.facebook}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:text-blue-800"
@@ -308,7 +321,7 @@ const CreatorModal = ({
                       )}
                       {defaultDetails.socialLinks?.twitter && (
                         <a
-                          href={defaultDetails.socialLinks.twitter}
+                          href={`https://x.com/${defaultDetails.socialLinks.twitter}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-400 hover:text-blue-600"
@@ -325,7 +338,7 @@ const CreatorModal = ({
                       )}
                       {defaultDetails.socialLinks?.instagram && (
                         <a
-                          href={defaultDetails.socialLinks.instagram}
+                          href={`https://www.instagram.com/${defaultDetails.socialLinks.instagram}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-pink-600 hover:text-pink-800"

@@ -85,6 +85,15 @@ const supportSchema = mongoose.Schema(
       type: String,
       default: "",
     },
+    // Danh sách hình ảnh minh chứng sau khi xác nhận
+    proofImages: [
+      {
+        url: { type: String, required: true },
+        uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        uploadedAt: { type: Date, default: Date.now },
+        note: { type: String, default: "" },
+      },
+    ],
     statusHistory: [statusHistorySchema],
   },
   {

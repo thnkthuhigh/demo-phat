@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import User from "../models/userModel.js";
 import Support from "../models/supportModel.js";
+import Case from "../models/caseModel.js";
 import mongoose from "mongoose";
 
 // @desc    Get user profile
@@ -129,7 +130,7 @@ const getUserById = asyncHandler(async (req, res) => {
 });
 
 // Thêm function mới để lấy thông tin chi tiết của người dùng
-export const getUserDetails = asyncHandler(async (req, res) => {
+const getUserDetails = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -185,4 +186,50 @@ export const getUserDetails = asyncHandler(async (req, res) => {
   }
 });
 
-export { getUserProfile, updateUserProfile, getUserById };
+export { getUserProfile, updateUserProfile, getUserById, getUserDetails };
+
+// Public: Get supports by user id (completed only)
+export const getUserSupportsPublic = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const supports = await Support.find({
+    user: id,
+    status: "completed",
+  })
+    .sort({ createdAt: -1 })
+    .populate("case", "title situationImages");
+
+  const data = supports.map((s) => ({
+    _id: s._id,
+    amount: s.amount,
+    message: s.message,
+    items: s.items || [], // Include items for item-based support
+    createdAt: s.createdAt,
+    case: s.case
+      ? { _id: s.case._id, title: s.case.title, image: s.case.situationImages?.[0] || null }
+      : null,
+  }));
+
+  res.json(data);
+});
+
+// Public: Get cases created by user (active only)
+export const getUserCasesPublic = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const cases = await Case.find({ user: id, status: "active" })
+    .sort({ createdAt: -1 })
+    .select("title targetAmount currentAmount situationImages createdAt supportType neededItems");
+
+  // Map để trả về dữ liệu với tên field chuẩn
+  const data = cases.map(c => ({
+    _id: c._id,
+    title: c.title,
+    targetAmount: c.targetAmount,
+    raisedAmount: c.currentAmount, // Map currentAmount -> raisedAmount cho frontend
+    situationImages: c.situationImages,
+    createdAt: c.createdAt,
+    supportType: c.supportType,
+    neededItems: c.neededItems,
+  }));
+
+  res.json(data);
+});

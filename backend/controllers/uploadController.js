@@ -42,13 +42,14 @@ function checkFileType(file, cb) {
   }
 }
 
+// Dùng any() để chấp nhận cả field "image" và "images" từ phía client
 const upload = multer({
   storage,
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);
   },
   limits: { fileSize: 5 * 1024 * 1024 },
-}).array("image", 10); // Đúng tên field là "image" và giới hạn 10 file
+}).any(); // chấp nhận nhiều field, tối đa 10 file theo giới hạn mặc định ở client
 
 // Chỉnh lại đường dẫn URL để tránh vấn đề với đường dẫn tương đối
 export const uploadImages = asyncHandler(async (req, res) => {
@@ -59,13 +60,23 @@ export const uploadImages = asyncHandler(async (req, res) => {
       throw new Error(err.message);
     }
 
+    // req.files có thể là mảng (khi dùng any())
+    const files = Array.isArray(req.files)
+      ? req.files
+      : Object.values(req.files || {}).flat();
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "Không nhận được file tải lên" });
+    }
+
     // Đảm bảo URL có đường dẫn đầy đủ
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const paths = req.files.map(
+    const paths = files.map(
       (file) => `${baseUrl}/uploads/${file.filename}` // Đường dẫn đầy đủ
     );
 
     console.log("Files uploaded successfully:", paths.length);
+    // Trả về mảng URL để tương thích với các client hiện có
     res.json(paths);
   });
 });

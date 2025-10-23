@@ -4,6 +4,7 @@ import Case from "../models/caseModel.js";
 import User from "../models/userModel.js";
 import { io } from "../server.js";
 import mongoose from "mongoose";
+import path from "path";
 
 // @desc    Create support for a case
 // @route   POST /api/cases/:id/support
@@ -254,7 +255,7 @@ const getTopSupportersForCase = asyncHandler(async (req, res) => {
   const topSupporters = await Support.aggregate([
     {
       $match: {
-        case: mongoose.Types.ObjectId(caseId),
+        case: new mongoose.Types.ObjectId(caseId),
         status: "completed",
         anonymous: false,
       },
@@ -269,6 +270,9 @@ const getTopSupportersForCase = asyncHandler(async (req, res) => {
     { $sort: { totalAmount: -1 } },
     { $limit: 10 },
   ]);
+
+  console.log(`Found ${topSupporters.length} top supporters for case ${caseId}`);
+  console.log("Top supporters:", topSupporters);
 
   // Populate user details
   const populatedSupporters = await Promise.all(
@@ -285,6 +289,7 @@ const getTopSupportersForCase = asyncHandler(async (req, res) => {
     })
   );
 
+  console.log("Final populated supporters:", populatedSupporters);
   res.json(populatedSupporters);
 });
 
@@ -439,3 +444,52 @@ export {
   getTopSupportersForCase,
   updateSupportStatus,
 };
+
+// @desc    Add proof images to a support (admin or supporter after completed)
+// @route   POST /api/supports/:id/proofs
+// @access  Private (owner or admin)
+const addSupportProofs = asyncHandler(async (req, res) => {
+  const supportId = req.params.id;
+  const { images, note } = req.body; // images: array of urls (already uploaded via /api/upload)
+
+  const support = await Support.findById(supportId);
+  if (!support) {
+    res.status(404);
+    throw new Error("Không tìm thấy giao dịch ủng hộ");
+  }
+
+  // Only allow when support is completed or user is admin
+  const isOwner = support.user.toString() === req.user._id.toString();
+  const isAdmin = req.user && req.user.isAdmin;
+  // Allow case owner (recipient) as well
+  let isCaseOwner = false;
+  try {
+    const caseDoc = await Case.findById(support.case).select("user");
+    if (caseDoc) {
+      isCaseOwner = caseDoc.user.toString() === req.user._id.toString();
+    }
+  } catch (_) {}
+
+  if (
+    !(isAdmin || ((isOwner || isCaseOwner) && support.status === "completed"))
+  ) {
+    res.status(403);
+    throw new Error("Bạn không có quyền thêm minh chứng cho giao dịch này");
+  }
+
+  if (!images || !Array.isArray(images) || images.length === 0) {
+    res.status(400);
+    throw new Error("Vui lòng gửi danh sách hình ảnh hợp lệ");
+  }
+
+  support.proofImages = support.proofImages || [];
+  images.forEach((url) => {
+    support.proofImages.push({ url, uploadedBy: req.user._id, note: note || "" });
+  });
+
+  await support.save();
+
+  res.json({ success: true, proofImages: support.proofImages });
+});
+
+export { addSupportProofs };

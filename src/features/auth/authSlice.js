@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import api from '../../utils/api';
 
 const initialState = {
   userInfo: localStorage.getItem('userInfo') 
@@ -17,7 +18,7 @@ export const checkTokenValidity = createAsyncThunk(
     const { userInfo } = getState().auth;
     if (userInfo && userInfo.token) {
       try {
-        const { data } = await axios.get('/api/users/profile', {
+        const { data } = await api.get('/users/profile', {
           headers: {
             Authorization: `Bearer ${userInfo.token}`,
           },

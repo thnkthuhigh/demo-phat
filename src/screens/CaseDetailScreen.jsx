@@ -25,16 +25,26 @@ const CaseDetailScreen = () => {
   const [loadingCreatorDetails, setLoadingCreatorDetails] = useState(false);
   const [topSupporters, setTopSupporters] = useState([]);
   const [loadingTopSupporters, setLoadingTopSupporters] = useState(false);
+  const [uploadingProofs, setUploadingProofs] = useState(false);
 
   // Thêm state mới cho slideshow và modal hình ảnh
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProofImage, setSelectedProofImage] = useState(null);
+  const [showSupportProofsModal, setShowSupportProofsModal] = useState(false);
+  const [currentSupportProofs, setCurrentSupportProofs] = useState([]);
+  const [currentProofIndex, setCurrentProofIndex] = useState(0);
+  const [showSituationModal, setShowSituationModal] = useState(false);
+  const [selectedSituationImage, setSelectedSituationImage] = useState(null);
 
   // Thêm state mới
   const [showProofImages, setShowProofImages] = useState(false);
   // Thêm state mới
   const [showCreatorModal, setShowCreatorModal] = useState(false);
+  // State hiển thị thông tin người dùng (dùng chung CreatorModal)
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [selectedUserDetails, setSelectedUserDetails] = useState(null);
+  const [loadingSelectedUser, setLoadingSelectedUser] = useState(false);
 
   useEffect(() => {
     // Fetch case details
@@ -102,7 +112,10 @@ const CaseDetailScreen = () => {
           const { data } = await axios.get(
             `/api/cases/${caseId}/top-supporters`
           );
-          setTopSupporters(data);
+          console.log("Top supporters data:", data);
+          // Sắp xếp theo totalAmount giảm dần để đảm bảo thứ tự đúng
+          const sortedData = data.sort((a, b) => b.totalAmount - a.totalAmount);
+          setTopSupporters(sortedData);
         } catch (error) {
           console.error("Error fetching top supporters:", error);
         } finally {
@@ -179,6 +192,32 @@ const CaseDetailScreen = () => {
     setSelectedProofImage(image);
     setShowProofModal(true);
   };
+  const openSupportProofs = (proofs) => {
+    setCurrentSupportProofs(proofs || []);
+    setCurrentProofIndex(0); // Bắt đầu từ ảnh đầu tiên
+    setShowSupportProofsModal(true);
+  };
+
+  // Hàm hiển thị modal hình ảnh minh hoạ
+  const openSituationImage = (image) => {
+    setSelectedSituationImage(image);
+    setShowSituationModal(true);
+  };
+
+  // Hàm mở modal thông tin người dùng (dùng CreatorModal)
+  const openUserModal = async (userId) => {
+    if (!userId) return;
+    setLoadingSelectedUser(true);
+    setShowUserModal(true);
+    try {
+      const { data } = await axios.get(`/api/users/${userId}`);
+      setSelectedUserDetails(data);
+    } catch (e) {
+      console.error("Error fetching selected user details:", e);
+    } finally {
+      setLoadingSelectedUser(false);
+    }
+  };
 
   // Thêm biến mới cho phần hiển thị tiến độ vật phẩm
   const calculateOverallItemProgress = () => {
@@ -220,48 +259,57 @@ const CaseDetailScreen = () => {
     userInfo && caseDetails.user && userInfo._id === caseDetails.user._id;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Status badge */}
-      <div className="mb-6">
-        <span
-          className={`px-3 py-1 text-sm font-semibold rounded-full ${
-            caseDetails.status === "active"
-              ? "bg-green-100 text-green-800"
-              : caseDetails.status === "completed"
-              ? "bg-blue-100 text-blue-800"
-              : caseDetails.status === "pending"
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {caseDetails.status === "active" && "Đang vận động"}
-          {caseDetails.status === "completed" && "Hoàn thành"}
-          {caseDetails.status === "pending" && "Chờ duyệt"}
-          {caseDetails.status === "cancelled" && "Đã hủy"}
-        </span>
+    <div className="min-h-screen bg-[#E8F4FB]">
+      <div className="w-full px-8 md:px-16 lg:px-24 xl:px-32 py-8 md:py-12">
+        {/* Breadcrumb */}
+        <div className="mb-6">
+          <Link to="/cases" className="text-[#007BFF] hover:text-[#0277BD] font-medium text-sm inline-flex items-center">
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Quay lại danh sách
+          </Link>
+        </div>
 
-        {caseDetails.featured && (
-          <span className="ml-2 px-3 py-1 bg-amber-100 text-amber-800 text-sm font-semibold rounded-full">
-            Nổi bật
+        {/* Status badges */}
+        <div className="mb-6 flex flex-wrap gap-2">
+          <span
+            className={`px-4 py-2 text-sm font-bold rounded-2xl ${
+              caseDetails.status === "active"
+                ? "bg-[#5CC9B5] text-white"
+                : caseDetails.status === "completed"
+                ? "bg-[#4FA3E3] text-white"
+                : caseDetails.status === "pending"
+                ? "bg-yellow-500 text-white"
+                : "bg-gray-500 text-white"
+            }`}
+          >
+            {caseDetails.status === "active" && "Đang vận động"}
+            {caseDetails.status === "completed" && "Hoàn thành"}
+            {caseDetails.status === "pending" && "Chờ duyệt"}
+            {caseDetails.status === "cancelled" && "Đã hủy"}
           </span>
-        )}
+          {caseDetails.featured && (
+            <span className="px-4 py-2 bg-gradient-to-r from-[#5CC9B5] to-[#4FA3E3] text-white text-sm font-bold rounded-2xl">
+              Nổi bật
+            </span>
+          )}
+          <span className="px-4 py-2 bg-[#E8F4FB] text-[#007BFF] text-sm font-bold rounded-2xl border-2 border-[#4FA3E3]/30">
+            {getCategoryLabel(caseDetails.category)}
+          </span>
+        </div>
 
-        <span className="ml-2 px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-semibold rounded-full">
-          {getCategoryLabel(caseDetails.category)}
-        </span>
-      </div>
+        {/* Title */}
+        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8">{caseDetails.title}</h1>
 
-      {/* Title */}
-      <h1 className="text-3xl font-bold mb-4">{caseDetails.title}</h1>
-
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left column - Images and details */}
-        <div className="lg:w-8/12">
-          {/* Main image slideshow */}
-          {caseDetails.situationImages &&
-          caseDetails.situationImages.length > 0 ? (
-            <div className="mb-8 relative">
-              <div className="relative h-[500px] overflow-hidden rounded-xl shadow-lg">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left column - Images and details */}
+          <div className="lg:w-8/12">
+            {/* Main image slideshow */}
+            {caseDetails.situationImages &&
+            caseDetails.situationImages.length > 0 ? (
+              <div className="mb-8 relative">
+                <div className="relative h-[550px] md:h-[650px] overflow-hidden rounded-3xl shadow-xl border-2 border-[#4FA3E3]/20">
                 {caseDetails.situationImages.map((image, index) => (
                   <div
                     key={index}
@@ -273,11 +321,12 @@ const CaseDetailScreen = () => {
                     style={{
                       display: index === currentSlide ? "block" : "none",
                     }}
+                    onClick={() => openSituationImage(image)}
                   >
                     <img
                       src={image}
                       alt={`${caseDetails.title} - ${index + 1}`}
-                      className="w-full h-full object-cover rounded-xl"
+                      className="w-full h-full object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
                     />
                   </div>
                 ))}
@@ -287,7 +336,7 @@ const CaseDetailScreen = () => {
                   <>
                     <button
                       onClick={prevSlide}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 text-gray-800 p-3 rounded-full hover:bg-opacity-100 transition-all shadow-md"
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-[#007BFF] p-3 rounded-full hover:bg-white transition-all shadow-xl"
                       aria-label="Ảnh trước"
                     >
                       <svg
@@ -300,14 +349,14 @@ const CaseDetailScreen = () => {
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
+                          strokeWidth={2.5}
                           d="M15 19l-7-7 7-7"
                         />
                       </svg>
                     </button>
                     <button
                       onClick={nextSlide}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 text-gray-800 p-3 rounded-full hover:bg-opacity-100 transition-all shadow-md"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 backdrop-blur-sm text-[#007BFF] p-3 rounded-full hover:bg-white transition-all shadow-xl"
                       aria-label="Ảnh sau"
                     >
                       <svg
@@ -320,7 +369,7 @@ const CaseDetailScreen = () => {
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          strokeWidth={2}
+                          strokeWidth={2.5}
                           d="M9 5l7 7-7 7"
                         />
                       </svg>
@@ -335,10 +384,10 @@ const CaseDetailScreen = () => {
                       <button
                         key={index}
                         onClick={() => setCurrentSlide(index)}
-                        className={`w-3 h-3 rounded-full transition-all shadow ${
+                        className={`h-2 rounded-full transition-all shadow-lg ${
                           index === currentSlide
-                            ? "bg-white scale-125"
-                            : "bg-white bg-opacity-50 hover:bg-opacity-75"
+                            ? "bg-white w-8"
+                            : "bg-white/60 w-2 hover:bg-white/80"
                         }`}
                         aria-label={`Chuyển đến ảnh ${index + 1}`}
                       ></button>
@@ -354,10 +403,10 @@ const CaseDetailScreen = () => {
                     <div
                       key={`thumb-${index}`}
                       onClick={() => setCurrentSlide(index)}
-                      className={`relative cursor-pointer overflow-hidden rounded-lg ${
+                      className={`relative cursor-pointer overflow-hidden rounded-xl transition-all ${
                         index === currentSlide
-                          ? "ring-2 ring-indigo-500 ring-offset-2"
-                          : "hover:opacity-80"
+                          ? "ring-2 ring-[#007BFF] ring-offset-2 scale-105"
+                          : "hover:opacity-80 hover:scale-105"
                       }`}
                     >
                       <img
@@ -381,16 +430,39 @@ const CaseDetailScreen = () => {
           )}
 
           {/* Hiển thị phần hình ảnh minh chứng */}
-          {caseDetails.proofImages && caseDetails.proofImages.length > 0 && (
-            <div className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setShowProofImages(!showProofImages)}
-                className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center"
-              >
-                <div className="flex items-center">
+          {caseDetails.proofImages &&
+            caseDetails.proofImages.length > 0 &&
+            !showProofModal && (
+              <div className="mb-6 border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setShowProofImages(!showProofImages)}
+                  className="w-full p-4 text-left bg-gray-50 hover:bg-gray-100 transition-colors flex justify-between items-center"
+                >
+                  <div className="flex items-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-2 text-gray-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="font-semibold">Hình ảnh minh chứng</span>
+                    <span className="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-0.5 rounded-full">
+                      {caseDetails.proofImages.length}
+                    </span>
+                  </div>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 mr-2 text-gray-600"
+                    className={`h-5 w-5 transition-transform ${
+                      showProofImages ? "transform rotate-180" : ""
+                    }`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -399,76 +471,55 @@ const CaseDetailScreen = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      d="M19 9l-7 7-7-7"
                     />
                   </svg>
-                  <span className="font-semibold">Hình ảnh minh chứng</span>
-                  <span className="ml-2 bg-gray-200 text-gray-800 text-xs font-semibold px-2 py-0.5 rounded-full">
-                    {caseDetails.proofImages.length}
-                  </span>
-                </div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={`h-5 w-5 transition-transform ${
-                    showProofImages ? "transform rotate-180" : ""
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
+                </button>
 
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  showProofImages
-                    ? "max-h-[1000px] opacity-100"
-                    : "max-h-0 opacity-0"
-                }`}
-              >
-                <div className="p-4 bg-white">
-                  <p className="text-sm text-gray-600 mb-3">
-                    Bấm vào hình ảnh để xem chi tiết minh chứng
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                    {caseDetails.proofImages.map((image, index) => (
-                      <div
-                        key={`proof-${index}`}
-                        onClick={() => openProofImage(image)}
-                        className="cursor-pointer hover:opacity-80 transition-opacity"
-                      >
-                        <img
-                          src={image}
-                          alt={`Minh chứng ${index + 1}`}
-                          className="w-full h-32 object-cover rounded border border-gray-200"
-                        />
-                        <p className="text-xs text-center mt-1 text-gray-500">
-                          Minh chứng {index + 1}
-                        </p>
-                      </div>
-                    ))}
+                <div
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    showProofImages
+                      ? "max-h-[1000px] opacity-100"
+                      : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="p-4 bg-white">
+                    <p className="text-sm text-gray-600 mb-3">
+                      Bấm vào hình ảnh để xem chi tiết minh chứng
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      {caseDetails.proofImages.map((image, index) => (
+                        <div
+                          key={`proof-${index}`}
+                          onClick={() => openProofImage(image)}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                          <img
+                            src={image}
+                            alt={`Minh chứng ${index + 1}`}
+                            className="w-full h-32 object-cover rounded border border-gray-200"
+                          />
+                          <p className="text-xs text-center mt-1 text-gray-500">
+                            Minh chứng {index + 1}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Tab navigation */}
           <div className="mb-8">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-6 overflow-x-auto scrollbar-hide">
+            <div className="border-b-2 border-[#4FA3E3]/20">
+              <nav className="-mb-0.5 flex space-x-6 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab("description")}
-                  className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                  className={`pb-4 px-1 font-bold text-sm flex items-center whitespace-nowrap border-b-2 transition-all duration-200 ${
                     activeTab === "description"
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-[#007BFF] text-[#007BFF]"
+                      : "border-transparent text-gray-500 hover:text-[#007BFF] hover:border-[#4FA3E3]/50"
                   }`}
                 >
                   <svg
@@ -490,10 +541,10 @@ const CaseDetailScreen = () => {
                 {caseDetails.updates && caseDetails.updates.length > 0 && (
                   <button
                     onClick={() => setActiveTab("updates")}
-                    className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                    className={`pb-4 px-1 font-bold text-sm flex items-center whitespace-nowrap border-b-2 transition-all duration-200 ${
                       activeTab === "updates"
-                        ? "border-indigo-500 text-indigo-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        ? "border-[#007BFF] text-[#007BFF]"
+                        : "border-transparent text-gray-500 hover:text-[#007BFF] hover:border-[#4FA3E3]/50"
                     }`}
                   >
                     <svg
@@ -510,7 +561,7 @@ const CaseDetailScreen = () => {
                       />
                     </svg>
                     Cập nhật
-                    <span className="ml-1.5 px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                    <span className="ml-1.5 px-2 py-0.5 bg-[#E8F4FB] text-[#007BFF] rounded-full text-xs font-bold">
                       {caseDetails.updates.length}
                     </span>
                   </button>
@@ -518,10 +569,10 @@ const CaseDetailScreen = () => {
 
                 <button
                   onClick={() => setActiveTab("supporters")}
-                  className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                  className={`pb-4 px-1 font-bold text-sm flex items-center whitespace-nowrap border-b-2 transition-all duration-200 ${
                     activeTab === "supporters"
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-[#007BFF] text-[#007BFF]"
+                      : "border-transparent text-gray-500 hover:text-[#007BFF] hover:border-[#4FA3E3]/50"
                   }`}
                 >
                   <svg
@@ -539,7 +590,7 @@ const CaseDetailScreen = () => {
                   </svg>
                   Người ủng hộ
                   {recentSupports?.length > 0 && (
-                    <span className="ml-1.5 px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-xs">
+                    <span className="ml-1.5 px-2 py-0.5 bg-[#E8F4FB] text-[#007BFF] rounded-full text-xs font-bold">
                       {recentSupports.length}
                     </span>
                   )}
@@ -547,10 +598,10 @@ const CaseDetailScreen = () => {
 
                 <button
                   onClick={() => setActiveTab("topSupporters")}
-                  className={`pb-4 px-1 font-medium text-sm flex items-center whitespace-nowrap border-b-2 transition-colors duration-200 ${
+                  className={`pb-4 px-1 font-bold text-sm flex items-center whitespace-nowrap border-b-2 transition-all duration-200 ${
                     activeTab === "topSupporters"
-                      ? "border-indigo-500 text-indigo-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-[#007BFF] text-[#007BFF]"
+                      : "border-transparent text-gray-500 hover:text-[#007BFF] hover:border-[#4FA3E3]/50"
                   }`}
                 >
                   <svg
@@ -697,9 +748,18 @@ const CaseDetailScreen = () => {
                         <div className="ml-3 flex-1">
                           <div className="flex justify-between items-center">
                             <p className="text-sm font-medium text-gray-900">
-                              {support.anonymous
-                                ? "Người ủng hộ ẩn danh"
-                                : support.user?.name}
+                              {support.anonymous ? (
+                                "Người ủng hộ ẩn danh"
+                              ) : (
+                                <button
+                                  onClick={() =>
+                                    openUserModal(support.user?._id)
+                                  }
+                                  className="hover:text-indigo-600 hover:underline transition-colors"
+                                >
+                                  {support.user?.name}
+                                </button>
+                              )}
                             </p>
                             <p className="text-xs text-gray-500">
                               {new Date(support.createdAt).toLocaleDateString(
@@ -752,13 +812,95 @@ const CaseDetailScreen = () => {
                             </div>
                           )}
 
-                          {support.status !== "completed" && (
-                            <div className="mt-1 text-xs text-gray-500 italic">
-                              {support.status === "pending"
-                                ? "Đang chờ duyệt"
-                                : "Đã hủy"}
-                            </div>
-                          )}
+                          <div className="mt-1 flex items-center gap-3 flex-wrap">
+                            {support.status === "completed" && (
+                              <span className="text-xs italic text-green-600">
+                                Đã duyệt
+                              </span>
+                            )}
+                            {support.proofImages &&
+                              support.proofImages.length > 0 &&
+                              !showSupportProofsModal && (
+                                <button
+                                  onClick={() =>
+                                    openSupportProofs(support.proofImages)
+                                  }
+                                  className="text-xs text-indigo-600 hover:underline"
+                                >
+                                  Xem minh chứng ({support.proofImages.length})
+                                </button>
+                              )}
+                            {/* Upload minh chứng nếu là chủ khoản ủng hộ, chủ hoàn cảnh hoặc admin */}
+                            {userInfo &&
+                              (userInfo.isAdmin ||
+                                userInfo._id === support.user?._id ||
+                                isOwner) &&
+                              support.status === "completed" &&
+                              !showSupportProofsModal &&
+                              !showProofModal &&
+                              !showSituationModal && (
+                                <label className="text-xs text-gray-600 hover:text-gray-800 cursor-pointer">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const files = Array.from(
+                                        e.target.files || []
+                                      );
+                                      if (!files.length) return;
+                                      try {
+                                        setUploadingProofs(true);
+                                        // 1) upload images to get URLs
+                                        const form = new FormData();
+                                        files.forEach((f) =>
+                                          form.append("image", f)
+                                        );
+                                        const uploadRes = await axios.post(
+                                          `/api/upload`,
+                                          form,
+                                          {
+                                            headers: {
+                                              "Content-Type":
+                                                "multipart/form-data",
+                                              Authorization: `Bearer ${userInfo.token}`,
+                                            },
+                                          }
+                                        );
+                                        const urls =
+                                          uploadRes.data?.urls ||
+                                          uploadRes.data ||
+                                          [];
+                                        // 2) attach to support
+                                        await axios.post(
+                                          `/api/supports/${support._id}/proofs`,
+                                          { images: urls },
+                                          {
+                                            headers: {
+                                              Authorization: `Bearer ${userInfo.token}`,
+                                            },
+                                          }
+                                        );
+                                        // 3) refresh case details
+                                        dispatch(fetchCaseDetails(caseId));
+                                      } catch (err) {
+                                        console.error(
+                                          "Upload proofs error:",
+                                          err
+                                        );
+                                      } finally {
+                                        setUploadingProofs(false);
+                                        e.target.value = "";
+                                      }
+                                    }}
+                                  />
+                                  {uploadingProofs
+                                    ? "Đang tải minh chứng..."
+                                    : "Thêm minh chứng"}
+                                </label>
+                              )}
+                          </div>
                         </div>
                       </div>
                     </li>
@@ -831,12 +973,12 @@ const CaseDetailScreen = () => {
                               alt={supporter.userName}
                             />
                             <div>
-                              <Link
-                                to={`/user/${supporter.userId}`}
-                                className="text-sm font-medium text-gray-900 hover:text-indigo-600"
+                              <button
+                                onClick={() => openUserModal(supporter.userId)}
+                                className="text-sm font-medium text-gray-900 hover:text-indigo-600 hover:underline transition-colors"
                               >
                                 {supporter.userName}
-                              </Link>
+                              </button>
                               <p className="text-xs text-gray-500 mt-0.5">
                                 {supporter.supportCount} lượt ủng hộ
                               </p>
@@ -868,30 +1010,30 @@ const CaseDetailScreen = () => {
 
         {/* Right column - Support info */}
         <div className="lg:w-4/12">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sticky top-4">
+          <div className="bg-white rounded-3xl border-2 border-[#4FA3E3]/20 shadow-xl p-6 sticky top-4">
             {/* Progress bar */}
             <div className="mb-6">
               {/* Tiến độ quyên góp tiền */}
               {(caseDetails.supportType === "money" ||
                 caseDetails.supportType === "both") && (
                 <div className="mb-4">
-                  <div className="flex justify-between mb-1">
-                    <h3 className="font-semibold text-gray-700">
+                  <div className="flex justify-between mb-3">
+                    <h3 className="font-extrabold text-gray-900 text-xl">
                       {formatCurrency(caseDetails.currentAmount)}
                     </h3>
-                    <span className="text-gray-600">
-                      {progressPercentage}% của{" "}
-                      {formatCurrency(caseDetails.targetAmount)}
+                    <span className="text-sm text-gray-600 font-medium">
+                      {progressPercentage}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-indigo-600 h-2.5 rounded-full"
+                      className="bg-gradient-to-r from-[#5CC9B5] to-[#4FA3E3] h-3 rounded-full transition-all duration-500"
                       style={{ width: `${progressPercentage}%` }}
                     ></div>
                   </div>
-                  <div className="mt-2 text-sm text-gray-600">
-                    {caseDetails.supportCount} lượt ủng hộ
+                  <div className="mt-3 flex justify-between items-center text-sm">
+                    <span className="text-gray-600">Mục tiêu: {formatCurrency(caseDetails.targetAmount)}</span>
+                    <span className="text-[#007BFF] font-bold">{caseDetails.supportCount} lượt</span>
                   </div>
                 </div>
               )}
@@ -904,26 +1046,26 @@ const CaseDetailScreen = () => {
                   <div
                     className={
                       caseDetails.supportType === "both"
-                        ? "mt-4 pt-4 border-t border-gray-200"
+                        ? "mt-4 pt-4 border-t-2 border-[#4FA3E3]/20"
                         : ""
                     }
                   >
                     {caseDetails.supportType === "both" && (
-                      <h3 className="font-semibold text-gray-700 mb-2">
+                      <h3 className="font-bold text-gray-900 mb-3">
                         Tiến độ vật phẩm
                       </h3>
                     )}
 
-                    <div className="flex justify-between mb-1">
-                      <h4 className="font-medium text-sm">Tổng vật phẩm</h4>
-                      <span className="text-sm text-gray-600">
+                    <div className="flex justify-between mb-2">
+                      <h4 className="font-bold text-sm text-gray-900">Tổng vật phẩm</h4>
+                      <span className="text-sm text-[#007BFF] font-bold">
                         {countReceivedItems(caseDetails.neededItems)}/
                         {countTotalItems(caseDetails.neededItems)}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-4 overflow-hidden">
                       <div
-                        className="bg-green-500 h-2.5 rounded-full"
+                        className="bg-gradient-to-r from-[#5CC9B5] to-[#4FA3E3] h-3 rounded-full transition-all duration-500"
                         style={{ width: `${calculateOverallItemProgress()}%` }}
                       ></div>
                     </div>
@@ -931,18 +1073,18 @@ const CaseDetailScreen = () => {
                     <div className="space-y-3 max-h-60 overflow-auto pr-2">
                       {caseDetails.neededItems.map((item, index) => (
                         <div key={index}>
-                          <div className="flex justify-between mb-1">
-                            <span className="font-medium text-sm">
+                          <div className="flex justify-between mb-1.5">
+                            <span className="font-bold text-sm text-gray-900">
                               {item.name}
                             </span>
-                            <span className="text-sm text-gray-600">
+                            <span className="text-xs text-[#007BFF] font-bold">
                               {item.receivedQuantity} / {item.quantity}{" "}
                               {item.unit}
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                             <div
-                              className="bg-green-500 h-2 rounded-full"
+                              className="bg-gradient-to-r from-[#5CC9B5] to-[#4FA3E3] h-2 rounded-full transition-all duration-500"
                               style={{
                                 width: `${Math.min(
                                   Math.round(
@@ -971,12 +1113,12 @@ const CaseDetailScreen = () => {
             {caseDetails.status === "active" && (
               <button
                 onClick={handleSupportClick}
-                className="w-full py-3.5 px-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg text-lg font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 animate-pulse-subtle"
+                className="w-full py-3.5 px-4 bg-gradient-to-r from-[#007BFF] to-[#0277BD] text-white rounded-2xl text-base font-bold hover:from-[#0277BD] hover:to-[#007BFF] transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#007BFF]"
               >
                 <div className="flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 mr-2"
+                    className="h-5 w-5 mr-2"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -997,15 +1139,15 @@ const CaseDetailScreen = () => {
             {isOwner && (
               <Link
                 to={`/edit-case/${caseId}`}
-                className="mt-3 w-full block text-center py-3 bg-white border border-indigo-600 text-indigo-600 rounded-md text-lg font-medium hover:bg-indigo-50 transition-colors"
+                className="mt-3 w-full block text-center py-3 bg-white border-2 border-[#007BFF] text-[#007BFF] rounded-2xl text-base font-bold hover:bg-[#E8F4FB] transition-all"
               >
                 Chỉnh sửa
               </Link>
             )}
 
             {/* Creator info */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-gray-700 font-semibold mb-4">
+            <div className="mt-6 pt-6 border-t-2 border-[#4FA3E3]/20">
+              <h3 className="text-gray-900 font-bold mb-4 text-lg">
                 Thông tin người tạo
               </h3>
               {loadingCreatorDetails ? (
@@ -1021,16 +1163,27 @@ const CaseDetailScreen = () => {
                         "https://via.placeholder.com/40"
                       }
                       alt={creatorDetails.name}
-                      className="h-12 w-12 rounded-full"
+                      className="h-12 w-12 rounded-full border-2 border-[#5CC9B5] object-cover"
                     />
                     <div className="ml-4">
                       <button
                         onClick={() => setShowCreatorModal(true)}
-                        className="text-indigo-600 font-medium hover:underline"
+                        className="text-[#007BFF] font-bold hover:text-[#0277BD] hover:underline"
                       >
                         {creatorDetails.name}
                       </button>
-                      <div className="flex items-center text-sm text-gray-500">
+                      {/* Link xem chi tiết nhanh */}
+                      <div>
+                        <button
+                          onClick={() =>
+                            navigate(`/user/${creatorDetails._id}`)
+                          }
+                          className="text-xs text-[#007BFF] hover:text-[#0277BD] hover:underline"
+                        >
+                          Xem chi tiết
+                        </button>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600 font-medium">
                         <span>{creatorDetails.supportCount} lượt ủng hộ</span>
                         <span className="mx-1">•</span>
                         <span>
@@ -1041,7 +1194,7 @@ const CaseDetailScreen = () => {
                     </div>
                   </div>
                   {creatorDetails.bio && (
-                    <p className="mt-3 text-gray-600 text-sm italic">
+                    <p className="mt-3 text-gray-700 text-sm italic">
                       "{creatorDetails.bio}"
                     </p>
                   )}
@@ -1051,7 +1204,7 @@ const CaseDetailScreen = () => {
                         href={creatorDetails.socialLinks.facebook}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-[#007BFF] hover:text-[#0277BD] transition-colors"
                       >
                         <svg
                           className="w-5 h-5"
@@ -1067,7 +1220,7 @@ const CaseDetailScreen = () => {
                         href={creatorDetails.socialLinks.twitter}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-sky-500 text-white p-2.5 rounded-full hover:bg-sky-600 transition-colors"
+                        className="text-[#007BFF] hover:text-[#0277BD] transition-colors"
                       >
                         <svg
                           className="w-5 h-5"
@@ -1083,7 +1236,7 @@ const CaseDetailScreen = () => {
                         href={creatorDetails.socialLinks.instagram}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-pink-600 hover:text-pink-800"
+                        className="text-[#007BFF] hover:text-[#0277BD] transition-colors"
                       >
                         <svg
                           className="w-5 h-5"
@@ -1104,10 +1257,10 @@ const CaseDetailScreen = () => {
             </div>
 
             {/* Share buttons */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-gray-700 font-semibold mb-4">Chia sẻ</h3>
+            <div className="mt-6 pt-6 border-t-2 border-[#4FA3E3]/20">
+              <h3 className="text-gray-900 font-bold mb-4 text-lg">Chia sẻ</h3>
               <div className="flex space-x-4">
-                <button className="flex items-center text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-md">
+                <button className="flex items-center text-[#007BFF] hover:bg-[#E8F4FB] px-4 py-2 rounded-2xl font-medium transition-colors">
                   <svg
                     className="w-5 h-5 mr-2"
                     fill="currentColor"
@@ -1117,13 +1270,13 @@ const CaseDetailScreen = () => {
                   </svg>
                   <span>Facebook</span>
                 </button>
-                <button className="flex items-center text-sky-500 hover:bg-sky-50 px-3 py-2 rounded-md">
+                <button className="flex items-center text-[#007BFF] hover:bg-[#E8F4FB] px-4 py-2 rounded-2xl font-medium transition-colors">
                   <svg
                     className="w-5 h-5 mr-2"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085a4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"></path>
+                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"></path>
                   </svg>
                   <span>Twitter</span>
                 </button>
@@ -1132,7 +1285,7 @@ const CaseDetailScreen = () => {
 
             {/* Report link */}
             <div className="mt-6 text-center">
-              <button className="text-red-500 text-sm hover:underline">
+              <button className="text-red-500 text-sm hover:text-red-700 hover:underline font-medium">
                 Báo cáo hoàn cảnh này
               </button>
             </div>
@@ -1173,6 +1326,119 @@ const CaseDetailScreen = () => {
         </div>
       )}
 
+      {/* Modal để hiển thị hình ảnh minh hoạ khi được bấm vào */}
+      {showSituationModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-75 flex items-center justify-center">
+          <div className="relative max-w-4xl w-full p-2">
+            <button
+              onClick={() => setShowSituationModal(false)}
+              className="absolute top-2 right-2 bg-white rounded-full p-2 text-gray-800 z-10"
+              aria-label="Đóng"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <img
+              src={selectedSituationImage}
+              alt="Hình ảnh minh hoạ"
+              className="max-h-screen max-w-full mx-auto rounded-lg"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Modal minh chứng của khoản ủng hộ */}
+      {showSupportProofsModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-90 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-6xl">
+            <button
+              onClick={() => setShowSupportProofsModal(false)}
+              className="absolute -top-12 right-0 bg-white rounded-full p-2 text-gray-800 hover:bg-gray-200 transition-colors z-10"
+              aria-label="Đóng"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            
+            {currentSupportProofs && currentSupportProofs.length > 0 ? (
+              <div className="space-y-4">
+                {/* Ảnh lớn hiển thị */}
+                <div className="bg-black rounded-lg overflow-hidden">
+                  <img
+                    src={currentSupportProofs[currentProofIndex]?.url}
+                    alt={`Minh chứng ${currentProofIndex + 1}`}
+                    className="w-full max-h-[70vh] object-contain mx-auto"
+                  />
+                  {currentSupportProofs[currentProofIndex]?.note && (
+                    <div className="bg-white p-4">
+                      <p className="text-gray-700 text-sm">
+                        {currentSupportProofs[currentProofIndex].note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Grid ảnh nhỏ bên dưới */}
+                {currentSupportProofs.length > 1 && (
+                  <div className="bg-white rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-700 mb-3">
+                      Tất cả minh chứng ({currentSupportProofs.length})
+                    </p>
+                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                      {currentSupportProofs.map((p, idx) => (
+                        <div
+                          key={idx}
+                          className={`cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                            idx === currentProofIndex
+                              ? 'border-[#007BFF] ring-2 ring-[#007BFF] ring-offset-2'
+                              : 'border-gray-200 hover:border-[#4FA3E3]'
+                          }`}
+                          onClick={() => setCurrentProofIndex(idx)}
+                        >
+                          <img
+                            src={p.url}
+                            alt={`Thumbnail ${idx + 1}`}
+                            className="w-full h-20 object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg p-8 text-center">
+                <p className="text-gray-500">Không có minh chứng</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Modal thông tin người tạo */}
       {showCreatorModal && creatorDetails && (
         <CreatorModal
@@ -1180,6 +1446,20 @@ const CaseDetailScreen = () => {
           formatDate={formatDate}
           formatCurrency={formatCurrency}
           onClose={() => setShowCreatorModal(false)}
+        />
+      )}
+
+      {/* Modal thông tin người dùng dùng chung CreatorModal */}
+      {showUserModal && (
+        <CreatorModal
+          creatorDetails={selectedUserDetails}
+          formatDate={formatDate}
+          formatCurrency={formatCurrency}
+          onClose={() => {
+            setShowUserModal(false);
+            setSelectedUserDetails(null);
+          }}
+          isLoading={loadingSelectedUser}
         />
       )}
 
@@ -1210,6 +1490,7 @@ const CaseDetailScreen = () => {
         <div className="p-5">
           <ChatBox caseId={caseId} userInfo={userInfo} />
         </div>
+      </div>
       </div>
     </div>
   );

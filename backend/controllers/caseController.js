@@ -91,12 +91,17 @@ const getCases = asyncHandler(async (req, res) => {
     ? { category: req.query.category }
     : {};
 
+  const supportTypeFilter = req.query.supportType
+    ? { supportType: req.query.supportType }
+    : {};
+
   const statusFilter = { status: "active" }; // Only show active cases by default
 
   // Combine all filters
   const filter = {
     ...keyword,
     ...categoryFilter,
+    ...supportTypeFilter,
     ...statusFilter,
   };
 
@@ -147,8 +152,12 @@ const getCaseById = asyncHandler(async (req, res) => {
     const formattedSupports = recentSupports.map((support) => ({
       _id: support._id,
       amount: support.amount,
+      items: support.items || [],
       message: support.message,
       createdAt: support.createdAt,
+      status: support.status,
+      anonymous: support.anonymous,
+      proofImages: support.proofImages || [],
       user: support.anonymous
         ? { name: "Ẩn danh", avatar: null }
         : {

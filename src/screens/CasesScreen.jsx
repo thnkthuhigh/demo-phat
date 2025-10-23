@@ -9,18 +9,35 @@ const CasesScreen = () => {
   const dispatch = useDispatch();
   const [currentPage, setCurrentPage] = useState(1);
   const [category, setCategory] = useState("");
+  const [supportType, setSupportType] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showItemsModal, setShowItemsModal] = useState(false);
+  const [selectedItems, setSelectedItems] = useState([]);
 
   const { loading, error, cases, pages } = useSelector((state) => state.cases);
 
   useEffect(() => {
-    dispatch(fetchCases({ page: currentPage, keyword: searchTerm, category }));
-  }, [dispatch, currentPage, searchTerm, category]);
+    dispatch(
+      fetchCases({
+        page: currentPage,
+        keyword: searchTerm,
+        category,
+        supportType,
+      })
+    );
+  }, [dispatch, currentPage, searchTerm, category, supportType]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     setCurrentPage(1);
-    dispatch(fetchCases({ page: 1, keyword: searchTerm, category }));
+    dispatch(
+      fetchCases({ page: 1, keyword: searchTerm, category, supportType })
+    );
+  };
+
+  const openItemsModal = (items) => {
+    setSelectedItems(items);
+    setShowItemsModal(true);
   };
 
   const formatCurrency = (amount) => {
@@ -141,73 +158,92 @@ const CasesScreen = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header với background gradient */}
-      <div className="mb-10 bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+    <div className="min-h-screen bg-[#E8F4FB]">
+      {/* Header Section - Enhanced */}
+      <div className="bg-gradient-to-br from-[#E8F4FB] via-white to-[#E8F4FB] py-12">
+        <div className="max-w-full px-8 lg:px-32 xl:px-40">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">
               Tất cả hoàn cảnh
             </h1>
-            <p className="text-gray-600">
+            <p className="text-lg text-gray-700">
               Khám phá và hỗ trợ những hoàn cảnh khó khăn
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
-            {/* Category filter - Thiết kế đẹp hơn */}
-            <select
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
-            >
-              {categories.map((cat) => (
-                <option key={cat.value} value={cat.value}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
-
-            {/* Search form - Thiết kế đẹp hơn */}
-            <form onSubmit={handleSearch} className="flex flex-1">
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Tìm hoàn cảnh..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2.5 block w-full border border-gray-300 rounded-l-lg focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
-                />
-              </div>
-              <button
-                type="submit"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-r-lg shadow-sm transition-all duration-200 flex items-center"
+          {/* Filters - Enhanced Design */}
+          <div className="bg-white rounded-3xl shadow-xl border-2 border-[#4FA3E3]/20 p-6 md:p-8">
+            <div className="flex flex-col lg:flex-row gap-4">
+              {/* Category filter */}
+              <select
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-3 border-2 border-[#4FA3E3]/30 rounded-2xl bg-white text-gray-700 text-sm font-medium focus:ring-2 focus:ring-[#007BFF] focus:border-[#007BFF] transition-all hover:border-[#4FA3E3]"
               >
-                <span>Tìm</span>
-              </button>
-            </form>
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+
+              {/* Support Type filter */}
+              <select
+                value={supportType}
+                onChange={(e) => {
+                  setSupportType(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="px-4 py-3 border-2 border-[#4FA3E3]/30 rounded-2xl bg-white text-gray-700 text-sm font-medium focus:ring-2 focus:ring-[#007BFF] focus:border-[#007BFF] transition-all hover:border-[#4FA3E3]"
+              >
+                <option value="">Tất cả loại hỗ trợ</option>
+                <option value="money">Quyên góp tiền</option>
+                <option value="items">Hỗ trợ vật phẩm</option>
+                <option value="both">Cả hai</option>
+              </select>
+
+              {/* Search form */}
+              <form onSubmit={handleSearch} className="flex flex-1">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <svg
+                      className="h-5 w-5 text-[#5CC9B5]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Tìm hoàn cảnh..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-12 pr-4 py-3 block w-full border-2 border-[#4FA3E3]/30 rounded-l-2xl text-sm font-medium focus:ring-2 focus:ring-[#007BFF] focus:border-[#007BFF] transition-all hover:border-[#4FA3E3]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-[#007BFF] hover:bg-[#0277BD] text-white font-bold px-6 py-3 rounded-r-2xl transition-all shadow-lg hover:shadow-xl text-sm"
+                >
+                  Tìm
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
+
+      <div className="max-w-full px-8 lg:px-32 xl:px-40 py-12">
 
       {loading ? (
         <div className="flex justify-center items-center min-h-[300px]">
@@ -278,52 +314,43 @@ const CasesScreen = () => {
         </div>
       ) : (
         <>
-          {/* Grid card với hiệu ứng hover */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+          {/* Cases Grid - Enhanced Design */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {cases.map((caseItem) => (
               <div
                 key={caseItem._id}
-                className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden transform hover:-translate-y-1 border border-gray-100"
+                className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden border-2 border-transparent hover:border-[#5CC9B5] transform hover:-translate-y-2 flex flex-col"
               >
-                {/* Phần hình ảnh với hiệu ứng zoom khi hover */}
-                <div className="h-52 overflow-hidden relative">
+                {/* Image */}
+                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                   <img
                     src={
-                      caseItem.situationImages &&
-                      caseItem.situationImages.length > 0
-                        ? caseItem.situationImages[0]
-                        : "https://placehold.co/600x400?text=No+Image"
+                      caseItem.situationImages?.[0] || "https://via.placeholder.com/400x300"
                     }
                     alt={caseItem.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
-
-                  {/* Gradient overlay cho phần dưới hình ảnh */}
-                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black to-transparent opacity-60"></div>
-
-                  {/* Featured badge với hiệu ứng glow */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                  
+                  {/* Featured Badge */}
                   {caseItem.featured && (
-                    <div className="absolute top-3 left-0 bg-gradient-to-r from-amber-500 to-amber-400 text-white px-4 py-1 text-xs font-semibold shadow-md rounded-r-full flex items-center gap-1">
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
+                    <div className="absolute top-3 right-3 bg-gradient-to-r from-[#5CC9B5] to-[#4FA3E3] text-white px-3 py-1.5 rounded-2xl text-xs font-bold shadow-xl flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
-                      <span>Nổi bật</span>
+                      Nổi bật
                     </div>
                   )}
 
-                  {/* Status badge */}
-                  <div className="absolute top-3 right-3">
+                  {/* Status Badge */}
+                  <div className="absolute top-3 left-3">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`px-3 py-1.5 rounded-2xl text-xs font-bold shadow-lg ${
                         caseItem.status === "active"
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-[#5CC9B5] text-white"
                           : caseItem.status === "completed"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
+                          ? "bg-[#4FA3E3] text-white"
+                          : "bg-gray-500 text-white"
                       }`}
                     >
                       {caseItem.status === "active"
@@ -337,85 +364,50 @@ const CasesScreen = () => {
                   </div>
                 </div>
 
-                {/* Phần nội dung */}
-                <div className="p-6">
-                  {/* Tiêu đề với hiệu ứng màu khi hover */}
-                  <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                    <Link to={`/case/${caseItem._id}`}>{caseItem.title}</Link>
-                  </h3>
+                {/* Content */}
+                <div className="p-5 flex flex-col flex-grow">
+                  <Link to={`/case/${caseItem._id}`}>
+                    <h3 className="text-lg font-bold mb-2 line-clamp-2 text-gray-900 group-hover:text-[#007BFF] transition-colors leading-tight min-h-[3.5rem]">
+                      {caseItem.title}
+                    </h3>
+                  </Link>
 
-                  {/* Mô tả với giới hạn dòng */}
-                  <p className="text-gray-600 text-sm mb-5 line-clamp-2 h-10">
+                  <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed min-h-[2.5rem]">
                     {caseItem.description}
                   </p>
 
-                  {/* Thanh tiến độ tài trợ với animation */}
-                  <div className="mb-6 space-y-3">
-                    {(caseItem.supportType === "money" ||
-                      caseItem.supportType === "both") && (
+                  {/* Progress Section */}
+                  <div className="space-y-3 mb-4 flex-grow">
+                    {/* Money Progress */}
+                    {(caseItem.supportType === "money" || caseItem.supportType === "both") && (
                       <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className="font-medium">
-                            {formatCurrency(caseItem.currentAmount)}
-                          </span>
-                          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium">
-                            {Math.round(
-                              (caseItem.currentAmount / caseItem.targetAmount) *
-                                100
-                            )}
-                            %
-                          </span>
-                          <span className="text-gray-500">
-                            {formatCurrency(caseItem.targetAmount)}
+                        <div className="flex justify-between items-baseline mb-2">
+                          <span className="text-xl font-extrabold text-gray-900">{formatCurrency(caseItem.currentAmount)}</span>
+                          <span className="text-xs text-gray-500 font-medium">
+                            / {formatCurrency(caseItem.targetAmount)}
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div className="relative w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                           <div
-                            className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-2.5 rounded-full relative"
+                            className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#5CC9B5] to-[#4FA3E3] rounded-full transition-all duration-500"
                             style={{
-                              width: `${Math.min(
-                                Math.round(
-                                  (caseItem.currentAmount /
-                                    caseItem.targetAmount) *
-                                    100
-                                ),
-                                100
-                              )}%`,
+                              width: `${Math.min(Math.round((caseItem.currentAmount / caseItem.targetAmount) * 100), 100)}%`,
                             }}
-                          >
-                            <div className="absolute inset-0 bg-stripes animate-progress"></div>
-                          </div>
+                          ></div>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1 flex justify-between">
-                          <span>
-                            <svg
-                              className="w-3.5 h-3.5 inline mr-1 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"
-                              />
+                        <div className="flex justify-between items-center text-xs text-gray-600 mt-2">
+                          <span className="inline-flex items-center font-medium">
+                            <svg className="w-3.5 h-3.5 mr-1 text-[#5CC9B5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
-                            {caseItem.supportCount || 0} lượt ủng hộ
+                            {caseItem.supportCount || 0} lượt
                           </span>
-                          <span>
-                            <svg
-                              className="w-3.5 h-3.5 inline mr-1 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#E8F4FB] text-[#007BFF]">
+                            {Math.min(Math.round((caseItem.currentAmount / caseItem.targetAmount) * 100), 100)}% đạt được
+                          </span>
+                          <span className="inline-flex items-center font-medium">
+                            <svg className="w-3.5 h-3.5 mr-1 text-[#5CC9B5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             {getRemainingDays(caseItem.endDate)}
                           </span>
@@ -423,56 +415,70 @@ const CasesScreen = () => {
                       </div>
                     )}
 
-                    {/* Hiển thị tiến độ vật phẩm */}
-                    {(caseItem.supportType === "items" ||
-                      caseItem.supportType === "both") &&
-                      caseItem.neededItems &&
-                      caseItem.neededItems.length > 0 && (
-                        <div
-                          className={
-                            caseItem.supportType === "both"
-                              ? "mt-3 pt-3 border-t border-gray-100"
-                              : ""
-                          }
-                        >
+                    {/* Items Progress */}
+                    {(caseItem.supportType === "items" || caseItem.supportType === "both") &&
+                      caseItem.neededItems?.length > 0 && (
+                        <div className={caseItem.supportType === "both" ? "pt-3 border-t border-gray-100" : ""}>
                           {caseItem.supportType === "both" && (
-                            <p className="text-sm font-medium mb-1.5">
-                              Vật phẩm:
-                            </p>
+                            <p className="text-xs font-bold text-gray-700 mb-2">Vật phẩm cần hỗ trợ</p>
                           )}
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className="bg-gradient-to-r from-green-500 to-green-400 h-2.5 rounded-full relative"
-                              style={{
-                                width: `${calculateItemsProgress(
-                                  caseItem.neededItems
-                                )}%`,
-                              }}
-                            >
-                              <div className="absolute inset-0 bg-stripes animate-progress"></div>
-                            </div>
+                          
+                          {/* Hiển thị danh sách vật phẩm */}
+                          <div className="space-y-2 mb-3">
+                            {caseItem.neededItems.slice(0, 2).map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-center text-sm">
+                                <span className="font-semibold text-gray-800 truncate flex-1 mr-2">
+                                  {item.name}
+                                </span>
+                                <span className="text-xs font-bold text-gray-600 whitespace-nowrap">
+                                  <span className="text-[#5CC9B5]">{item.receivedQuantity || 0}</span>
+                                  <span className="text-gray-400 mx-1">/</span>
+                                  <span>{item.quantity}</span>
+                                </span>
+                              </div>
+                            ))}
+                            {caseItem.neededItems.length > 2 && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  openItemsModal(caseItem.neededItems);
+                                }}
+                                className="text-xs text-[#007BFF] hover:text-[#0277BD] font-semibold hover:underline flex items-center gap-1"
+                              >
+                                <span>+{caseItem.neededItems.length - 2} vật phẩm khác</span>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
-                          <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>
-                              {countReceivedItems(caseItem.neededItems)} vật
-                              phẩm đã nhận
-                            </span>
-                            <span>
-                              {countTotalItems(caseItem.neededItems)} vật phẩm
-                              cần
+
+                          {/* Progress bar tổng */}
+                          <div className="relative w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#5CC9B5] to-[#4FA3E3] rounded-full transition-all duration-500"
+                              style={{
+                                width: `${calculateItemsProgress(caseItem.neededItems)}%`,
+                              }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-600 mt-1.5 font-medium">
+                            <span>{countReceivedItems(caseItem.neededItems)} đã nhận</span>
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#E8F4FB] text-[#007BFF]">
+                              {calculateItemsProgress(caseItem.neededItems)}% đạt được
                             </span>
                           </div>
                         </div>
                       )}
                   </div>
 
-                  {/* Nút hành động */}
-                  <div className="flex justify-center">
+                  {/* Action Button - Luôn ở cuối */}
+                  <div className="mt-auto">
                     <Link
                       to={`/case/${caseItem._id}`}
-                      className="inline-block w-full text-center bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow transform hover:-translate-y-0.5"
+                      className="block w-full text-center bg-[#007BFF] hover:bg-[#0277BD] text-white font-bold py-3 px-6 rounded-2xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-sm"
                     >
-                      Xem chi tiết
+                      Ủng hộ ngay
                     </Link>
                   </div>
                 </div>
@@ -480,40 +486,26 @@ const CasesScreen = () => {
             ))}
           </div>
 
-          {/* Pagination với thiết kế hiện đại */}
+          {/* Pagination - Enhanced */}
           {pages > 1 && (
-            <div className="flex justify-center mt-10 mb-16">
-              <nav className="flex items-center bg-white px-2 py-1.5 rounded-lg shadow-sm">
+            <div className="flex justify-center">
+              <div className="inline-flex items-center gap-2 bg-white px-5 py-3 rounded-2xl shadow-xl border-2 border-[#4FA3E3]/20">
                 <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className={`mx-1 px-4 py-2 rounded-md flex items-center transition-colors ${
+                  className={`p-2 rounded-xl font-bold transition-all ${
                     currentPage === 1
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-indigo-600 hover:bg-indigo-50"
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-[#007BFF] hover:bg-[#E8F4FB]"
                   }`}
                 >
-                  <svg
-                    className="w-5 h-5 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                   </svg>
-                  <span>Trước</span>
                 </button>
 
-                <div className="hidden sm:flex">
+                <div className="flex items-center gap-1.5">
                   {[...Array(pages).keys()].map((x) => {
-                    // Hiển thị giới hạn số trang nếu có nhiều trang
                     if (
                       pages <= 7 ||
                       x + 1 === 1 ||
@@ -524,10 +516,10 @@ const CasesScreen = () => {
                         <button
                           key={x + 1}
                           onClick={() => setCurrentPage(x + 1)}
-                          className={`mx-1 px-4 py-2 rounded-md font-medium transition-all ${
+                          className={`min-w-[2.5rem] h-10 rounded-xl font-bold text-sm transition-all ${
                             currentPage === x + 1
-                              ? "bg-indigo-600 text-white"
-                              : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                              ? "bg-[#007BFF] text-white shadow-lg scale-110"
+                              : "text-gray-700 hover:bg-[#E8F4FB]"
                           }`}
                         >
                           {x + 1}
@@ -538,55 +530,92 @@ const CasesScreen = () => {
                       (x + 1 === currentPage + 2 && currentPage < pages - 2)
                     ) {
                       return (
-                        <span
-                          key={x + 1}
-                          className="mx-1 px-2 py-2 text-gray-500 self-center"
-                        >
+                        <span key={x + 1} className="px-1.5 text-gray-400 font-bold text-sm">
                           ...
                         </span>
                       );
-                    } else {
-                      return null;
                     }
+                    return null;
                   })}
                 </div>
 
-                <div className="sm:hidden">
-                  <span className="px-3 py-2 text-gray-700">
-                    {currentPage} / {pages}
-                  </span>
-                </div>
-
                 <button
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, pages))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pages))}
                   disabled={currentPage === pages}
-                  className={`mx-1 px-4 py-2 rounded-md flex items-center transition-colors ${
+                  className={`p-2 rounded-xl font-bold transition-all ${
                     currentPage === pages
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-indigo-600 hover:bg-indigo-50"
+                      ? "text-gray-300 cursor-not-allowed"
+                      : "text-[#007BFF] hover:bg-[#E8F4FB]"
                   }`}
                 >
-                  <span>Tiếp</span>
-                  <svg
-                    className="w-5 h-5 ml-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
-              </nav>
+              </div>
             </div>
           )}
         </>
+      )}
+      </div>
+
+      {/* Modal hiển thị danh sách vật phẩm đầy đủ */}
+      {showItemsModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b-2 border-[#4FA3E3]/20">
+              <h3 className="text-xl font-bold text-gray-900">Danh sách vật phẩm cần hỗ trợ</h3>
+              <button
+                onClick={() => setShowItemsModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-3">
+                {selectedItems.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-4 bg-[#E8F4FB] rounded-2xl hover:bg-[#4FA3E3]/10 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <h4 className="font-bold text-gray-900 mb-1">{item.name}</h4>
+                      {item.description && (
+                        <p className="text-sm text-gray-600">{item.description}</p>
+                      )}
+                    </div>
+                    <div className="ml-4 text-right">
+                      <div className="text-sm font-bold text-gray-600">
+                        <span className="text-xl text-[#5CC9B5]">{item.receivedQuantity || 0}</span>
+                        <span className="text-gray-400 mx-2">/</span>
+                        <span className="text-xl text-gray-900">{item.quantity}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-gray-500">
+                        {Math.round(((item.receivedQuantity || 0) / item.quantity) * 100)}% đạt được
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t-2 border-[#4FA3E3]/20 bg-gray-50 rounded-b-3xl">
+              <button
+                onClick={() => setShowItemsModal(false)}
+                className="w-full bg-[#007BFF] hover:bg-[#0277BD] text-white font-bold py-3 px-6 rounded-2xl transition-all"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

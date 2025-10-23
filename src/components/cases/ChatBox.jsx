@@ -4,11 +4,15 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { DEFAULT_AVATAR } from "../../utils/constants";
+import CreatorModal from "./CreatorModal";
 
 const ChatBox = ({ caseId, userInfo }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [selectedUserDetails, setSelectedUserDetails] = useState(null);
+  const [loadingSelectedUser, setLoadingSelectedUser] = useState(false);
   const messageEndRef = useRef(null);
   const messageContainerRef = useRef(null); // Ref cho container tin nhắn
   const pollingIntervalRef = useRef(null);
@@ -157,11 +161,27 @@ const ChatBox = ({ caseId, userInfo }) => {
     return format(new Date(dateString), "HH:mm - dd/MM/yyyy", { locale: vi });
   };
 
+  // Handle user name click (fetch details and reuse CreatorModal)
+  const handleUserNameClick = async (userId) => {
+    if (!userId) return;
+    setLoadingSelectedUser(true);
+    setShowUserModal(true);
+    try {
+      const { data } = await axios.get(`/api/users/${userId}`);
+      setSelectedUserDetails(data);
+    } catch (e) {
+      console.error("Error fetching selected user for chat modal:", e);
+    } finally {
+      setLoadingSelectedUser(false);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="p-4 bg-indigo-600 text-white">
-        <h3 className="text-lg font-semibold">Thảo luận về hoàn cảnh này</h3>
-      </div>
+    <>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="p-4 bg-indigo-600 text-white">
+          <h3 className="text-lg font-semibold">Thảo luận về hoàn cảnh này</h3>
+        </div>
 
       {/* Messages container - Thêm ref cho container */}
       <div
@@ -195,13 +215,16 @@ const ChatBox = ({ caseId, userInfo }) => {
                   }`}
                 >
                   <div className="flex-shrink-0">
-                    <Link to={`/user/${message.user._id}`}>
+                    <button
+                      onClick={() => handleUserNameClick(message.user._id)}
+                      className="hover:opacity-80 transition-opacity"
+                    >
                       <img
                         src={message.user.avatar || DEFAULT_AVATAR}
                         alt={message.user.name}
                         className="h-8 w-8 rounded-full"
                       />
-                    </Link>
+                    </button>
                   </div>
                   <div
                     className={`mx-2 px-4 py-2 rounded-lg ${
@@ -211,12 +234,12 @@ const ChatBox = ({ caseId, userInfo }) => {
                     }`}
                   >
                     <div className="flex items-center">
-                      <Link
-                        to={`/user/${message.user._id}`}
+                      <button
+                        onClick={() => handleUserNameClick(message.user._id)}
                         className="font-medium text-sm text-indigo-600 hover:underline mr-2"
                       >
                         {message.user.name}
-                      </Link>
+                      </button>
                       <span className="text-xs text-gray-500">
                         {formatTime(message.createdAt)}
                       </span>
@@ -289,7 +312,20 @@ const ChatBox = ({ caseId, userInfo }) => {
           </div>
         )}
       </div>
-    </div>
+      </div>
+
+      {/* User Info Modal using CreatorModal */}
+      {showUserModal && (
+        <CreatorModal
+          creatorDetails={selectedUserDetails}
+          onClose={() => {
+            setShowUserModal(false);
+            setSelectedUserDetails(null);
+          }}
+          isLoading={loadingSelectedUser}
+        />
+      )}
+    </>
   );
 };
 

@@ -38,9 +38,21 @@ const ProfileScreen = () => {
       setGender(userInfo.gender || "");
       setBankAccount(userInfo.bankAccount || "");
       setBankName(userInfo.bankName || "");
-      setFacebookLink(userInfo.socialLinks?.facebook || "");
-      setTwitterLink(userInfo.socialLinks?.twitter || "");
-      setInstagramLink(userInfo.socialLinks?.instagram || "");
+      
+      // Xử lý social links - chỉ lấy phần username/path
+      if (userInfo.socialLinks?.facebook) {
+        const fb = userInfo.socialLinks.facebook;
+        setFacebookLink(fb.includes('facebook.com/') ? fb.split('facebook.com/').pop() : fb);
+      }
+      if (userInfo.socialLinks?.twitter) {
+        const tw = userInfo.socialLinks.twitter;
+        setTwitterLink(tw.includes('twitter.com/') ? tw.split('twitter.com/').pop() : tw);
+      }
+      if (userInfo.socialLinks?.instagram) {
+        const ig = userInfo.socialLinks.instagram;
+        setInstagramLink(ig.includes('instagram.com/') ? ig.split('instagram.com/').pop() : ig);
+      }
+      
       setBio(userInfo.bio || "");
     }
   }, [userInfo]);
@@ -87,6 +99,15 @@ const ProfileScreen = () => {
     try {
       setLoading(true);
 
+      // Xử lý social links - tạo full URL nếu chỉ có username
+      const processSocialLink = (link, platform) => {
+        if (!link || link.trim() === '') return undefined;
+        // Nếu đã có http/https thì giữ nguyên
+        if (link.startsWith('http')) return link;
+        // Nếu chỉ có username thì tạo full URL
+        return `https://${platform}.com/${link.replace(/^\/+/, '')}`;
+      };
+
       // Phiên bản 2: Nếu updateUserProfile là action creator thông thường
       dispatch(
         updateUserProfile({
@@ -101,9 +122,9 @@ const ProfileScreen = () => {
           bankAccount,
           bankName,
           socialLinks: {
-            facebook: facebookLink || undefined,
-            twitter: twitterLink || undefined,
-            instagram: instagramLink || undefined,
+            facebook: processSocialLink(facebookLink, 'facebook'),
+            twitter: processSocialLink(twitterLink, 'twitter'),
+            instagram: processSocialLink(instagramLink, 'instagram'),
           },
           bio,
         })

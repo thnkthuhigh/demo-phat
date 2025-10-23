@@ -6,7 +6,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "nodemon backend/server.js",
-    "dev:all": "concurrently \"npm run dev\" \"npm run server\""
+    "dev:all": "concurrently \"npm run dev\" \"npm run server\"",
+    "migrate:supportType": "node backend/scripts/addSupportTypeToExistingCases.js"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",

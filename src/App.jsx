@@ -23,6 +23,7 @@ import CreateSupportScreen from "./screens/CreateSupportScreen";
 import UserCasesScreen from "./screens/UserCasesScreen";
 import UserSupportsScreen from "./screens/UserSupportsScreen";
 import UserProfileScreen from "./screens/UserProfileScreen";
+import UserDetailScreen from "./screens/UserDetailScreen";
 import SupportersRankScreen from "./screens/SupportersRankScreen";
 import CasesScreen from "./screens/CasesScreen";
 
@@ -31,6 +32,7 @@ import AdminCaseListScreen from "./screens/admin/AdminCaseListScreen";
 import AdminSupportListScreen from "./screens/admin/AdminSupportListScreen";
 import AdminDashboardScreen from "./screens/admin/AdminDashboardScreen";
 import AdminPendingCasesScreen from "./screens/admin/AdminPendingCasesScreen";
+import AdminSupportHistoryScreen from "./screens/admin/AdminSupportHistoryScreen";
 
 // Auth
 import PrivateRoute from "./components/layout/PrivateRoute";
@@ -40,64 +42,101 @@ import ErrorBoundary from "./components/shared/ErrorBoundary";
 function App() {
   return (
     <Router>
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <main className="container mx-auto px-4 py-8 flex-grow">
-          <Routes>
-            <Route path="/" element={<HomeScreen />} />
-            <Route path="/login" element={<LoginScreen />} />
-            <Route path="/register" element={<RegisterScreen />} />
+      <Routes>
+        {/* Admin Routes - Separate Layout */}
+        <Route path="/admin" element={<AdminRoute />}>
+          <Route path="" element={<AdminDashboardScreen />} />
+          <Route path="cases" element={<AdminCaseListScreen />} />
+          <Route path="cases/pending" element={<AdminPendingCasesScreen />} />
+          <Route path="case/:id/edit" element={<EditCaseScreen />} />
+          <Route path="supports" element={<AdminSupportListScreen />} />
+          <Route path="history" element={<AdminSupportHistoryScreen />} />
+        </Route>
 
-            {/* Đặt route hỗ trợ trước route chi tiết hoàn cảnh để ưu tiên xử lý */}
-            <Route path="" element={<PrivateRoute />}>
-              <Route path="/support/:id" element={<CreateSupportScreen />} />
-            </Route>
+        {/* Public Routes - With Header/Footer */}
+        <Route
+          path="*"
+          element={
+            <div className="flex flex-col min-h-screen">
+              <Header />
+              <main className="flex-grow">
+                <Routes>
+                  <Route path="/" element={<HomeScreen />} />
+                  <Route path="/login" element={<LoginScreen />} />
+                  <Route path="/register" element={<RegisterScreen />} />
 
-            {/* Route chi tiết hoàn cảnh đặt sau */}
-            <Route path="/case/:id" element={<CaseDetailScreen />} />
+                  {/* Đặt route hỗ trợ trước route chi tiết hoàn cảnh để ưu tiên xử lý */}
+                  <Route path="" element={<PrivateRoute />}>
+                    <Route path="/support/:id" element={
+                      <div className="container mx-auto px-4 py-8">
+                        <CreateSupportScreen />
+                      </div>
+                    } />
+                  </Route>
 
-            {/* Private Routes cho người dùng đã đăng nhập */}
-            <Route path="" element={<PrivateRoute />}>
-              <Route path="/profile" element={<ProfileScreen />} />
-              <Route path="/create-case" element={<CreateCaseScreen />} />
-              <Route path="/edit-case/:id" element={<EditCaseScreen />} />
-              <Route path="/my-cases" element={<UserCasesScreen />} />
-              <Route
-                path="/my-supports"
-                element={
-                  <ErrorBoundary>
-                    <UserSupportsScreen />
-                  </ErrorBoundary>
-                }
-              />
-            </Route>
+                  {/* Route chi tiết hoàn cảnh đặt sau */}
+                  <Route path="/case/:id" element={<CaseDetailScreen />} />
 
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminRoute />}>
-              <Route path="" element={<AdminDashboardScreen />} />
-              <Route path="cases" element={<AdminCaseListScreen />} />
-              <Route
-                path="cases/pending"
-                element={<AdminPendingCasesScreen />}
-              />
-              <Route path="supports" element={<AdminSupportListScreen />} />
-            </Route>
+                  {/* Private Routes cho người dùng đã đăng nhập */}
+                  <Route path="" element={<PrivateRoute />}>
+                    <Route path="/profile" element={
+                      <div className="container mx-auto px-4 py-8">
+                        <ProfileScreen />
+                      </div>
+                    } />
+                    <Route path="/create-case" element={
+                      <div className="container mx-auto px-4 py-8">
+                        <CreateCaseScreen />
+                      </div>
+                    } />
+                    <Route path="/edit-case/:id" element={
+                      <div className="container mx-auto px-4 py-8">
+                        <EditCaseScreen />
+                      </div>
+                    } />
+                    <Route path="/my-cases" element={
+                      <div className="container mx-auto px-4 py-8">
+                        <UserCasesScreen />
+                      </div>
+                    } />
+                    <Route
+                      path="/my-supports"
+                      element={
+                        <div className="container mx-auto px-4 py-8">
+                          <ErrorBoundary>
+                            <UserSupportsScreen />
+                          </ErrorBoundary>
+                        </div>
+                      }
+                    />
+                  </Route>
 
-            {/* Route cho bảng xếp hạng người ủng hộ */}
-            <Route
-              path="/supporters-ranking"
-              element={<SupportersRankScreen />}
-            />
+                  {/* Route cho bảng xếp hạng người ủng hộ */}
+                  <Route
+                    path="/supporters-ranking"
+                    element={
+                      <div className="container mx-auto px-4 py-8">
+                        <SupportersRankScreen />
+                      </div>
+                    }
+                  />
 
-            {/* Route cho trang chi tiết người dùng */}
-            <Route path="/user/:id" element={<UserProfileScreen />} />
+                  {/* Route cho trang chi tiết người dùng (public) */}
+                  <Route path="/user/:id" element={
+                    <div className="container mx-auto px-4 py-8">
+                      <UserDetailScreen />
+                    </div>
+                  } />
 
-            {/* Route cho trang danh sách hoàn cảnh */}
-            <Route path="/cases" element={<CasesScreen />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+                  {/* Route cho trang danh sách hoàn cảnh - Full width */}
+                  <Route path="/cases" element={<CasesScreen />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          }
+        />
+      </Routes>
       <ToastContainer />
     </Router>
   );

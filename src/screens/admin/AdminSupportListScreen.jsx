@@ -22,6 +22,8 @@ const AdminSupportListScreen = () => {
   const [statusNote, setStatusNote] = useState("");
   const [refresh, setRefresh] = useState(false);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [proofFiles, setProofFiles] = useState([]);
+  const [uploadingProofs, setUploadingProofs] = useState(false);
 
   useEffect(() => {
     const fetchSupports = async () => {
@@ -61,6 +63,7 @@ const AdminSupportListScreen = () => {
     setSelectedSupport(support);
     setNewStatus(status);
     setStatusNote("");
+    setProofFiles([]);
     setShowStatusModal(true);
   };
 
@@ -89,6 +92,31 @@ const AdminSupportListScreen = () => {
         },
         config
       );
+
+      // Nếu duyệt và có tải kèm minh chứng, tiến hành upload và gắn vào support
+      if (newStatus === "completed" && proofFiles.length > 0) {
+        try {
+          setUploadingProofs(true);
+          const form = new FormData();
+          proofFiles.forEach((f) => form.append("image", f));
+          const uploadRes = await axios.post(`/api/upload`, form, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${userInfo.token}`,
+            },
+          });
+          const urls = uploadRes.data?.urls || uploadRes.data || [];
+          await axios.post(
+            `/api/supports/${selectedSupport._id}/proofs`,
+            { images: urls, note: statusNote },
+            { headers: { Authorization: `Bearer ${userInfo.token}` } }
+          );
+        } catch (e) {
+          console.error("Upload proof images error:", e);
+        } finally {
+          setUploadingProofs(false);
+        }
+      }
 
       closeStatusModal();
       setRefresh(!refresh);
@@ -119,53 +147,66 @@ const AdminSupportListScreen = () => {
   };
 
   return (
-    <div className="container mx-auto px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Quản lý ủng hộ</h1>
-        <div className="flex space-x-2">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border rounded-md px-3 py-1"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="pending">Chờ duyệt</option>
-            <option value="completed">Đã duyệt</option>
-            <option value="failed">Đã hủy</option>
-          </select>
+    <div className="space-y-6">
+      {/* Header and Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 mb-1">Quản lý ủng hộ</h2>
+            <p className="text-gray-600 text-sm">Theo dõi và quản lý tất cả các khoản ủng hộ trong hệ thống</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-white border border-gray-300 text-gray-900 rounded-lg py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none pr-8 min-w-[160px]"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="pending">Chờ duyệt</option>
+                <option value="completed">Đã duyệt</option>
+                <option value="failed">Đã hủy</option>
+              </select>
+              <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
       {error && <Message variant="error">{error}</Message>}
 
       {loading ? (
-        <Loader />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+          <Loader />
+        </div>
       ) : (
-        <>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full bg-white rounded-lg overflow-hidden">
-              <thead className="bg-gray-100">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="py-2 px-4 text-left">ID</th>
-                  <th className="py-2 px-4 text-left">Người ủng hộ</th>
-                  <th className="py-2 px-4 text-left">Hoàn cảnh</th>
-                  <th className="py-2 px-4 text-left">Loại hỗ trợ</th>
-                  <th className="py-2 px-4 text-left">Tiền ủng hộ</th>
-                  <th className="py-2 px-4 text-left">Ngày tạo</th>
-                  <th className="py-2 px-4 text-left">Trạng thái</th>
-                  <th className="py-2 px-4 text-left">Thao tác</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người ủng hộ</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hoàn cảnh</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại hỗ trợ</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiền ủng hộ</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                  <th className="py-3 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200">
                 {supports &&
                   supports.map((support) => (
-                    <tr key={support._id} className="hover:bg-gray-50">
-                      <td className="py-2 px-4">
-                        <span className="text-xs font-mono">
+                    <tr key={support._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
                           {support._id && support._id.substring(0, 8)}...
                         </span>
                       </td>
-                      <td className="py-2 px-4">
+                      <td className="py-4 px-6 whitespace-nowrap">
                         {support.user && (
                           <div className="flex items-center">
                             <img
@@ -285,19 +326,24 @@ const AdminSupportListScreen = () => {
           </div>
 
           {supports && supports.length === 0 && (
-            <div className="text-center py-8 bg-gray-50 rounded-lg mt-4">
+            <div className="text-center py-12">
+              <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
               <p className="text-gray-500">Không có dữ liệu ủng hộ</p>
             </div>
           )}
 
-          <div className="mt-6">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={(page) => setCurrentPage(page)}
-            />
-          </div>
-        </>
+          {supports && supports.length > 0 && (
+            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
+        </div>
       )}
 
       {/* Modal cập nhật trạng thái hoặc xem chi tiết */}
@@ -410,24 +456,105 @@ const AdminSupportListScreen = () => {
                 )}
               </div>
 
+              {/* Khu vực minh chứng hiện có */}
+              {selectedSupport.proofImages && selectedSupport.proofImages.length > 0 && (
+                <div className="mt-4 border-t border-gray-200 pt-3">
+                  <h4 className="font-medium mb-2">Minh chứng đã tải lên:</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedSupport.proofImages.map((p, i) => (
+                      <div key={i} className="border rounded overflow-hidden">
+                        <img src={p.url} alt={`proof-${i}`} className="w-full h-24 object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {newStatus !== "view" && (
-                <div className="mb-4">
-                  <label className="block mb-1">
-                    Ghi chú:
-                    {newStatus === "failed" && <span className="text-red-500">*</span>}
-                  </label>
-                  <textarea
-                    value={statusNote}
-                    onChange={(e) => setStatusNote(e.target.value)}
-                    className="w-full border border-gray-300 rounded p-2"
-                    rows="3"
-                    required={newStatus === "failed"}
-                    placeholder={
-                      newStatus === "completed"
-                        ? "Ghi chú khi duyệt (nếu có)"
-                        : "Lý do từ chối"
-                    }
-                  ></textarea>
+                <>
+                  <div className="mb-4">
+                    <label className="block mb-1">
+                      Ghi chú:
+                      {newStatus === "failed" && <span className="text-red-500">*</span>}
+                    </label>
+                    <textarea
+                      value={statusNote}
+                      onChange={(e) => setStatusNote(e.target.value)}
+                      className="w-full border border-gray-300 rounded p-2"
+                      rows="3"
+                      required={newStatus === "failed"}
+                      placeholder={
+                        newStatus === "completed"
+                          ? "Ghi chú khi duyệt (nếu có)"
+                          : "Lý do từ chối"
+                      }
+                    ></textarea>
+                  </div>
+
+                  {/* Nếu đang duyệt thì cho phép đính kèm minh chứng */}
+                  {newStatus === "completed" && (
+                    <div className="mb-4">
+                      <label className="block mb-1 font-medium">Hình ảnh xác nhận giao tặng (tuỳ chọn)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => setProofFiles(Array.from(e.target.files || []))}
+                        className="block w-full border border-gray-300 rounded p-2"
+                      />
+                      {proofFiles.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">Đã chọn {proofFiles.length} ảnh</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Cho phép admin bổ sung minh chứng sau khi đã duyệt */}
+              {newStatus === "view" && selectedSupport.status === "completed" && (
+                <div className="mt-4 border-t border-gray-200 pt-3">
+                  <h4 className="font-medium mb-2">Bổ sung minh chứng</h4>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (!files.length) return;
+                      try {
+                        setUploadingProofs(true);
+                        const form = new FormData();
+                        files.forEach((f) => form.append("image", f));
+                        const uploadRes = await axios.post(`/api/upload`, form, {
+                          headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: `Bearer ${userInfo.token}`,
+                          },
+                        });
+                        const urls = uploadRes.data?.urls || uploadRes.data || [];
+                        await axios.post(
+                          `/api/supports/${selectedSupport._id}/proofs`,
+                          { images: urls },
+                          { headers: { Authorization: `Bearer ${userInfo.token}` } }
+                        );
+                        // refresh table by toggling refresh and also update selectedSupport locally
+                        setRefresh((r) => !r);
+                        setSelectedSupport({ ...selectedSupport, proofImages: [
+                          ...(selectedSupport.proofImages || []),
+                          ...urls.map((u) => ({ url: u }))
+                        ] });
+                      } catch (e) {
+                        console.error("Add proofs error:", e);
+                      } finally {
+                        setUploadingProofs(false);
+                        e.target.value = "";
+                      }
+                    }}
+                    className="block w-full border border-gray-300 rounded p-2"
+                  />
+                  {uploadingProofs && (
+                    <p className="text-xs text-gray-500 mt-1">Đang tải minh chứng...</p>
+                  )}
                 </div>
               )}
 

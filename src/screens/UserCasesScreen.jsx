@@ -29,6 +29,23 @@ const UserCasesScreen = () => {
       minimumFractionDigits: 0,
     }).format(amount);
   };
+
+  const calculateItemsProgress = (neededItems) => {
+    if (!neededItems || neededItems.length === 0) return 0;
+    const totalReceived = neededItems.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0);
+    const totalNeeded = neededItems.reduce((sum, item) => sum + item.quantity, 0);
+    return totalNeeded > 0 ? Math.round((totalReceived / totalNeeded) * 100) : 0;
+  };
+
+  const countReceivedItems = (neededItems) => {
+    if (!neededItems || neededItems.length === 0) return 0;
+    return neededItems.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0);
+  };
+
+  const countTotalItems = (neededItems) => {
+    if (!neededItems || neededItems.length === 0) return 0;
+    return neededItems.reduce((sum, item) => sum + item.quantity, 0);
+  };
   
   const getStatusLabel = (status) => {
     switch (status) {
@@ -115,7 +132,7 @@ const UserCasesScreen = () => {
                         <div className="flex-shrink-0 h-10 w-10">
                           <img
                             className="h-10 w-10 rounded-md object-cover"
-                            src={caseItem.images && caseItem.images.length > 0 ? caseItem.images[0] : 'https://via.placeholder.com/40'}
+                            src={caseItem.situationImages && caseItem.situationImages.length > 0 ? caseItem.situationImages[0] : 'https://via.placeholder.com/40'}
                             alt={caseItem.title}
                           />
                         </div>
@@ -126,7 +143,11 @@ const UserCasesScreen = () => {
                             </Link>
                           </div>
                           <div className="text-sm text-gray-500">
-                            {formatCurrency(caseItem.currentAmount)} / {formatCurrency(caseItem.targetAmount)}
+                            {caseItem.supportType === 'money' || caseItem.supportType === 'both' ? (
+                              <span>{formatCurrency(caseItem.currentAmount)} / {formatCurrency(caseItem.targetAmount)}</span>
+                            ) : caseItem.supportType === 'items' ? (
+                              <span>{countReceivedItems(caseItem.neededItems)} / {countTotalItems(caseItem.neededItems)} vật phẩm</span>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -140,14 +161,40 @@ const UserCasesScreen = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="w-full bg-gray-200 rounded-full h-2.5 max-w-xs">
-                        <div
-                          className="bg-indigo-600 h-2.5 rounded-full"
-                          style={{ width: `${Math.min(Math.round((caseItem.currentAmount / caseItem.targetAmount) * 100), 100)}%` }}
-                        ></div>
-                      </div>
+                      {/* Hiển thị tiến độ tiền */}
+                      {(caseItem.supportType === 'money' || caseItem.supportType === 'both') && (
+                        <div className="mb-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2.5 max-w-xs">
+                            <div
+                              className="bg-indigo-600 h-2.5 rounded-full"
+                              style={{ width: `${Math.min(Math.round((caseItem.currentAmount / caseItem.targetAmount) * 100), 100)}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {Math.round((caseItem.currentAmount / caseItem.targetAmount) * 100)}% 
+                            {caseItem.supportType === 'both' && ' (Tiền)'}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Hiển thị tiến độ vật phẩm */}
+                      {(caseItem.supportType === 'items' || caseItem.supportType === 'both') && caseItem.neededItems && caseItem.neededItems.length > 0 && (
+                        <div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5 max-w-xs">
+                            <div
+                              className="bg-green-600 h-2.5 rounded-full"
+                              style={{ width: `${calculateItemsProgress(caseItem.neededItems)}%` }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {calculateItemsProgress(caseItem.neededItems)}% 
+                            {caseItem.supportType === 'both' && ' (Vật phẩm)'}
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="text-xs text-gray-500 mt-1">
-                        {Math.round((caseItem.currentAmount / caseItem.targetAmount) * 100)}% - {caseItem.supportCount} lượt ủng hộ
+                        {caseItem.supportCount || 0} lượt ủng hộ
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

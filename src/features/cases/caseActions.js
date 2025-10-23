@@ -48,10 +48,10 @@ export const fetchFeaturedCases = createAsyncThunk(
 // Fetch all cases with pagination and filters
 export const fetchCases = createAsyncThunk(
   "cases/fetchAll",
-  async ({ page = 1, keyword = "", category = "" }, { rejectWithValue }) => {
+  async ({ page = 1, keyword = "", category = "", supportType = "" }, { rejectWithValue }) => {
     try {
       const { data } = await axios.get(
-        `/api/cases?page=${page}&keyword=${keyword}&category=${category}`
+        `/api/cases?page=${page}&keyword=${keyword}&category=${category}&supportType=${supportType}`
       );
       return data;
     } catch (error) {
